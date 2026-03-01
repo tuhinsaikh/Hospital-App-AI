@@ -1,0 +1,10 @@
+langgraph
+langchain-core
+langchain-groq
+langchain-huggingface
+sentence-transformers
+qdrant-client
+fastapi
+uvicorn
+python-dotenv
+pydantic
