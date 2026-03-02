@@ -3,8 +3,10 @@ langchain-core
 langchain-groq
 langchain-huggingface
 sentence-transformers
-qdrant-client
+langchain-postgres
+psycopg2-binary
 fastapi
 uvicorn
 python-dotenv
 pydantic
+langchain-text-splitters

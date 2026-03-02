@@ -62,9 +62,11 @@ def response_generation_node(state: AgentState) -> dict:
         )
     elif intent == "NAVIGATION":
         system_msg = (
-            "You are a helpful hospital navigation assistant. "
-            "Use the provided context to answer where something is located. "
-            "If the context doesn't contain the answer, politely state that you cannot find it.\n\n"
+            "You are a helpful hospital navigation assistant.\n"
+            "CRITICAL INSTRUCTION: You must ONLY use the provided context to answer where something is located.\n"
+            "If the provided Context is empty, or if the answer is not explicitly stated in the Context, "
+            "you MUST reply ONLY with: 'I am sorry, but I do not have information about that location.'\n"
+            "Do NOT guess, do NOT use your pre-trained knowledge, and do NOT make up floor plans.\n\n"
             f"Context:\n{context}"
         )
     elif intent == "BOOKING":

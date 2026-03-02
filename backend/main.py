@@ -1,14 +1,19 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 
-# Load env variables (GROQ_API_KEY, QDRANT_URL)
+# Load env variables (GROQ_API_KEY, POSTGRES_URL)
 from pathlib import Path
 dotenv_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=dotenv_path)
+
+# HTML Templates config
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 # Import the LangGraph compiled agent and RAG service
 from backend.agents.hospital_agent import hospital_agent_app
@@ -37,6 +42,10 @@ async def lifespan(app: FastAPI):
 # --- FastAPI Setup ---
 app = FastAPI(title="Hospital AI Agent API", lifespan=lifespan)
 
+@app.get("/", response_class=HTMLResponse)
+async def get_chat_ui(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
 @app.post("/update_floor_plan")
 async def update_floor_plan(request: UpdatePlanRequest):
     try:
@@ -46,6 +55,14 @@ async def update_floor_plan(request: UpdatePlanRequest):
             "message": "Floor plan structured successfully.",
             "location_id": doc_id
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/clear_floor_plan")
+async def clear_floor_plan():
+    try:
+        rag_service.clear_database()
+        return {"status": "success", "message": "All floor plan data cleared successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
