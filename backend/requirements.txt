@@ -10,3 +10,4 @@ uvicorn
 python-dotenv
 pydantic
 langchain-text-splitters
+langchain-ollama
