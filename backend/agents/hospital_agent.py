@@ -21,10 +21,26 @@ class IntentOutput(BaseModel):
     intent: Literal["NAVIGATION", "EMERGENCY", "BOOKING", "OTHER"] = Field(description="The user's core intent.")
     search_query: str = Field(description="A detailed, standalone search query formulated from the user's message history to search a vector database for locations (e.g., expanding acronyms like 'usg' to 'ultrasound', fixing spelling, and replacing pronouns like 'there' with the actual location). If NA, return empty string.")
 
+import os
+from langchain_groq import ChatGroq
+from langchain_ollama import ChatOllama
+
+def _get_llm(temperature=0):
+    """Factory method to return the configured LLM based on environment variables."""
+    provider = os.getenv("LLM_PROVIDER", "groq").lower()
+    
+    if provider == "local":
+        base_url = os.getenv("OLLAMA_BASE_URL", "http://192.168.1.202:11434")
+        model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+        return ChatOllama(base_url=base_url, model=model, temperature=temperature)
+    else:
+        # Default to Groq
+        return ChatGroq(model="llama-3.1-8b-instant", temperature=temperature)
+
 # 2. Intent detection node (USING LLM)
 def intent_detection_node(state: AgentState) -> dict:
     """Detects the user's intent and formulates a search query using an LLM."""
-    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+    llm = _get_llm(temperature=0)
     structured_llm = llm.with_structured_output(IntentOutput)
     
     # Give the LLM all messages (conversation history) so it can resolve "there" or "it"
@@ -75,11 +91,11 @@ def rag_retrieval_node(state: AgentState) -> dict:
         
     return {"context": ""}
 
-# 4. Response generation node (USING GROQ API)
+# 4. Response generation node (USING LLM API)
 def response_generation_node(state: AgentState) -> dict:
-    """Generates final response using Groq's high-speed API with Llama 3."""
-    # Initialize the Groq LLM (Ensure GROQ_API_KEY is in your .env)
-    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+    """Generates final response using the configured LLM."""
+    # Initialize the LLM via factory
+    llm = _get_llm(temperature=0)
     
     intent = state.get("intent")
     context = state.get("context", "")
