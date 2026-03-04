@@ -11,3 +11,5 @@ python-dotenv
 pydantic
 langchain-text-splitters
 langchain-ollama
+python-multipart
+langchain-google-genai

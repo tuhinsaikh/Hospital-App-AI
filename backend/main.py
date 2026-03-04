@@ -1,6 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, File, UploadFile, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -18,6 +18,7 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 # Import the LangGraph compiled agent and RAG service
 from backend.agents.hospital_agent import hospital_agent_app
 from backend.services.rag_service import rag_service
+from backend.services.vision_service import vision_service
 
 # --- Models ---
 class ChatRequest(BaseModel):
@@ -47,15 +48,34 @@ async def get_chat_ui(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/update_floor_plan")
-async def update_floor_plan(request: UpdatePlanRequest):
+async def update_floor_plan(
+    file: UploadFile = File(None),
+    document: str = Form(None),
+    location_id: str = Form(None)
+):
     try:
-        doc_id = rag_service.insert_document(request.document, request.location_id)
-        return {
-            "status": "success", 
-            "message": "Floor plan structured successfully.",
-            "location_id": doc_id
-        }
+        if file:
+            print(f"Processing image file: {file.filename} with content_type {file.content_type}")
+            file_bytes = await file.read()
+            extracted_text = vision_service.extract_floor_plan_from_image(file_bytes, file.content_type)
+            doc_id = rag_service.insert_document(extracted_text, location_id)
+            return {
+                "status": "success", 
+                "message": "Floor plan image structured visually successfully.",
+                "location_id": doc_id,
+                "extracted_text": extracted_text
+            }
+        elif document:
+            doc_id = rag_service.insert_document(document, location_id)
+            return {
+                "status": "success", 
+                "message": "Floor plan structured successfully.",
+                "location_id": doc_id
+            }
+        else:
+             raise HTTPException(status_code=400, detail="Must provide either 'file' (image) or 'document' (text).")
     except Exception as e:
+        print(f"Error in ingestion: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/clear_floor_plan")

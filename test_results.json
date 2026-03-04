@@ -1,0 +1,14 @@
+{
+    "USG": {
+        "response": "I am sorry, but I do not have information about that location."
+    },
+    "Typo": {
+        "response": "I am sorry, but I do not have information about that location."
+    },
+    "Urgency": {
+        "response": "You need urgent blood. To get to the Blood Bank, you can walk from the Ground Floor parking area towards the hospital entrance. Once inside, head towards the First Floor using the stairs or elevator. The Blood Bank is located on the First Floor."
+    },
+    "Context": {
+        "response": "You are at the Ground Floor parking. To get to the Blood Bank, follow these steps:\n\n1. Walk towards the hospital entrance from the parking area.\n2. Once inside, look for the elevator or stairs to access the First Floor.\n3. Take the elevator or stairs to the First Floor.\n4. On the First Floor, follow the signs to the Blood Bank.\n\nThe Blood Bank is located on the First Floor."
+    }
+}
