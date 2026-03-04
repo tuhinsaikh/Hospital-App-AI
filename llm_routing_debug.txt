@@ -1,0 +1,195 @@
+--- LLM ROUTING ---
+Msg: I want to do usg, where to go?
+Intent: BOOKING
+Query: ultrasound diagnostic center location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: I want to see patent, where to go?
+Intent: NAVIGATION
+Query: patient ward location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: I need urgent blood, where to go?
+Intent: EMERGENCY
+Query: Blood Bank location, department, floor, emergency directions
+-------------------
+--- LLM ROUTING ---
+Msg: guide me how to go there. I am at the ground floor parking.
+Intent: NAVIGATION
+Query: Emergency Room location directions, Ground Floor, hospital entrance
+-------------------
+--- LLM ROUTING ---
+Msg: I want to do usg, where to go?
+Intent: NAVIGATION
+Query: ultrasound Diagnostic Center location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: I want to see patent, where to go?
+Intent: NAVIGATION
+Query: General Wards, Semi-Private Rooms, Maternity location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: I need urgent blood, where to go?
+Intent: NAVIGATION
+Query: Blood Bank location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: guide me how to go there. I am at the ground floor parking.
+Intent: NAVIGATION
+Query: Blood Bank location, department, ground floor parking
+-------------------
+--- LLM ROUTING ---
+Msg: I want to do usg, where to go?
+Intent: NAVIGATION
+Query: ultrasound Diagnostic Center location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: I want to see patent, where to go?
+Intent: NAVIGATION
+Query: General Wards, Semi-Private Rooms, Maternity location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: I need urgent blood, where to go?
+Intent: EMERGENCY
+Query: Blood Bank location, Emergency Department, Ground Floor
+-------------------
+--- LLM ROUTING ---
+Msg: guide me how to go there. I am at the ground floor parking.
+Intent: NAVIGATION
+Query: Blood Bank location directions, First Floor, hospital entrance, Ground Floor parking
+-------------------
+--- LLM ROUTING ---
+Msg: Hi, I am Tuhin
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I am a visitor
+Intent: NAVIGATION
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: My grandmother has admitted to this hospital, I don't know how to find her where to go
+Intent: NAVIGATION
+Query: General Wards, Semi-Private Rooms, Maternity location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: where admitted patients are, she can be there.
+Intent: NAVIGATION
+Query: admitted patients location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: Hi
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Tell me my name.
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Do you know me?
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: hi
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: hi
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I want to do usg
+Intent: NAVIGATION
+Query: ultrasound Diagnostic Center location, Radiology Department, 3rd Floor
+-------------------
+--- LLM ROUTING ---
+Msg: Hi this is Tuhin
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I need to go to Pharmacy.
+Intent: NAVIGATION
+Query: Pharmacy location, department, ground floor
+-------------------
+--- LLM ROUTING ---
+Msg: Today I will be discharge from the hospital, can you guide me about what I need to do and where I need to go?
+Intent: NAVIGATION
+Query: discharge process, patient discharge location, Ground Floor, Main Reception
+-------------------
+--- LLM ROUTING ---
+Msg: Can you guide me location of billing counter.
+Intent: NAVIGATION
+Query: Billing and Admission department location, Ground Floor, hospital
+-------------------
+--- LLM ROUTING ---
+Msg: I am in the male general word, how to go there from here.
+Intent: NAVIGATION
+Query: Male General Ward location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: Hello
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: How to go second floor.
+Intent: NAVIGATION
+Query: second floor location, hospital, directions
+-------------------
+--- LLM ROUTING ---
+Msg: Hi, This is Tuhin
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I am here for x-ray, how to find?
+Intent: NAVIGATION
+Query: X-Ray location, Radiology department, 3rd floor
+-------------------
+--- LLM ROUTING ---
+Msg: I am at the main lobby, how to go there?
+Intent: NAVIGATION
+Query: X-ray location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: How to go xray room from the lobby where I am right now.
+Intent: NAVIGATION
+Query: X-Ray location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: Do you know who am I?
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: where i xray?
+Intent: NAVIGATION
+Query: X-Ray location, department, floor
+-------------------
+--- LLM ROUTING ---
+Msg: where is dining room?
+Intent: NAVIGATION
+Query: dining room location, cafeteria, ground floor
+-------------------
+--- LLM ROUTING ---
+Msg: I am at the Dinning room, I want to go to MIR room, guide me.
+Intent: NAVIGATION
+Query: MIR room location, Medical Imaging and Radiology department, 3rd floor directions from Dining room
+-------------------
+--- LLM ROUTING ---
+Msg: Can you take me to the x-ray room?
+Intent: NAVIGATION
+Query: X-Ray Department, Radiology, Floor 3
+-------------------
+--- LLM ROUTING ---
+Msg: guide me
+Intent: NAVIGATION
+Query: X-Ray location, department, central area, floor 2
+-------------------

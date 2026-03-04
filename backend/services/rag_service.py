@@ -28,6 +28,9 @@ class RAGService:
             connection=self.postgres_url,
             use_jsonb=True,
         )
+        # Ensure tables and collection exist, especially if previously dropped
+        self.vector_store.create_tables_if_not_exists()
+        self.vector_store.create_collection()
 
     def insert_document(self, document: str, base_id: str | None = None) -> list[str]:
         """Dynamically inserts a large floor plan, splitting it into vector chunks."""
@@ -51,8 +54,9 @@ class RAGService:
         return point_ids
 
     def clear_database(self):
-        """Clears all data by dropping the collection."""
-        self.vector_store.drop_tables()
+        """Clears all data by dropping the specific collection."""
+        self.vector_store.delete_collection()
+        self.vector_store.create_collection()
 
     def retrieve(self, query: str, top_k: int = 2) -> str:
         """Retrieves top_k context documents based on the query vector."""
