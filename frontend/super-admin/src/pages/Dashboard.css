@@ -1,0 +1,108 @@
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.stat-card--indigo {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.stat-card--cyan {
+    border-color: rgba(6, 182, 212, 0.3);
+}
+
+.stat-card--green {
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.stat-card--amber {
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.stat-icon {
+    font-size: 1.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 2.25rem;
+    font-weight: 800;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.stat-delta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.table-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.875rem;
+}
+
+.data-table tbody tr:hover td {
+    background: rgba(99, 102, 241, 0.04);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.hospital-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.source-tag {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-sm);
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent-primary-light);
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.sync-time {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}

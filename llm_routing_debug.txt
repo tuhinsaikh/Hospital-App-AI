@@ -193,3 +193,8 @@ Msg: guide me
 Intent: NAVIGATION
 Query: X-Ray location, department, central area, floor 2
 -------------------
+--- LLM ROUTING ---
+Msg: I am suffering from fever, which doctor I need to concern with?
+Intent: OTHER
+Query: 
+-------------------
