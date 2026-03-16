@@ -17,8 +17,8 @@ class VisionService:
             return ChatGoogleGenerativeAI(model="gemini-1.5-flash")
         else:
             # Default to local (Ollama)
-            base_url = os.getenv("OLLAMA_BASE_URL", "http://192.168.1.202:11434")
-            model = os.getenv("OLLAMA_VISION_MODEL", "gemma3:27b")
+            base_url = os.getenv("OLLAMA_BASE_URL") or "http://192.168.1.202:11434"
+            model = os.getenv("OLLAMA_VISION_MODEL") or "gemma3:27b"
             return ChatOllama(base_url=base_url, model=model, temperature=0.1)
 
     def extract_floor_plan_from_image(self, file_bytes: bytes, mime_type: str = "image/jpeg") -> str:
