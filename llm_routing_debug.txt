@@ -193,3 +193,473 @@ Msg: guide me
 Intent: NAVIGATION
 Query: X-Ray location, department, central area, floor 2
 -------------------
+--- LLM ROUTING ---
+Msg: Hi
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Hi
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Why you are taking too much time to execute?
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: You are taking too much time to response.
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Hi I am Tuhin
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: where is the xray department?
+Intent: NAVIGATION
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Hi my name is Tuhin
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Hello this is Tuhin
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I want to book an appontment
+Intent: BOOKING
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I want to book an appointment.
+Intent: BOOKING
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I want to book an appointment
+Intent: BOOKING
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I am suffering from back pain.
+Intent: BOOKING
+Query: back pain specialist, Orthopedic Department, 3rd floor
+-------------------
+--- LLM ROUTING ---
+Msg: I am suffering from skin disease
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Which doctor I need to consult for this?
+Intent: NAVIGATION
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Hi I am here to consult a doctor.
+Intent: OTHER
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I am having back pain. Which doctor I need to consult?
+Intent: NAVIGATION
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I am having back pain. Which doctor I need to consult?
+Intent: BOOKING
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Hi I am here to consult a doctor.
+Intent: BOOKING
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: I am having skin problem.
+Intent: BOOKING
+Query: skin specialist, dermatology department, floor 3
+-------------------
+--- LLM ROUTING ---
+Msg: Hi I am having back pain
+Intent: BOOKING
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: Dr. Emily White (Orthopedic Surgeon)
+Intent: BOOKING
+Query: 
+-------------------
+--- LLM ROUTING ---
+Msg: How to go x-ray room?
+Intent: NAVIGATION
+Query: x ray location, radiology department, floor 3
+-------------------
+--- LLM ROUTING ---
+Msg: Hi I am Tuhin
+Intent: OTHER
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I need to consult doctor.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I am having back pain
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Dr. Emily White
+Intent: BOOKING
+Query: book an appointment with Dr. Emily White for back pain
+---
+--- LLM ROUTING ---
+Msg: 10
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: This booking for me.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Tell me my booking
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I want to book an appointment with Dr Rokaiya
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Okay, then I would prefer Dr. Michael Green
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: 6
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Hi, I am here to visit doctor.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I am facing heart related issue.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: other doctor
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: No, I will go with Dr Brown.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: slot 5
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I want to book another Dr. Michael Green
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: new booking for Dr. Michael Green
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Hi I am here to consult with a dermatologist.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Dr. John Doe on thursday on 10 am.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: slot 3
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Tuhin Saikh
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Hi
+Intent: OTHER
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I need to concern with a skin doctor.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: book for Dr. Alice Smith on wednesday at 1pm
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: 3
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Tuhin Saikh
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Are you an idiot? You mentioned that there was availability on Webnes day. And yoet you refuse to book an appointment. Could you doble check?
+Intent: NAVIGATION
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I wanna book a heart doctor? Is it available today?
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Dr. Robert Brown book him at 4:30 pm today.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: book dr Dr. Emily White
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Slot 5: 2026-03-13 | 15:00 - 15:30
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Tuhin
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: book an appointment of general physician
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Slot 2: 2026-03-12 | 10:00 - 10:30
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Tuhin
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I want to book another dr for my brother
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: skin doctor
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: No I want Dr. Michael Green
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: 2026-03-12 | 10:00 - 10:30
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Slot 3: 2026-03-12 | 11:30 - 12:00
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Tarib
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I want to book a doctor's appointment.
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Auto immune diseases
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Dr Lee
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: give me available slots
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I need to book thursday at 1:30 pm for 30 munites
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I need to visit to a doctor
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Heir problem
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: dermatologist
+Intent: BOOKING
+Query: dermatologist
+---
+--- LLM ROUTING ---
+Msg: Dr. Alice Smith tuesday at 1:30
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: 9
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: My name is Tuhin
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Need to concern to a bone doctor
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: yes
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: slots which are availabe
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: 8
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Rokaiya
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: y
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I am having cloistral problem
+Intent: BOOKING
+Query: cloistral problem
+---
+--- LLM ROUTING ---
+Msg: cholesterol problem
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: No, how you can recommended  an Orthopedic Surgeon, having  cholesterol issue?
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: General physician
+Intent: BOOKING
+Query: 
+---
