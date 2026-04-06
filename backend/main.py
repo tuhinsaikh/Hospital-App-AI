@@ -2,7 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, File, UploadFile, Form
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
@@ -12,8 +12,8 @@ from pathlib import Path
 dotenv_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=dotenv_path)
 
-# HTML Templates config
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+# HTML Templates directory
+TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 # Import the LangGraph compiled agent and RAG service
 from backend.agents.hospital_agent import hospital_agent_app
@@ -44,8 +44,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Hospital AI Agent API", lifespan=lifespan)
 
 @app.get("/", response_class=HTMLResponse)
-async def get_chat_ui(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def get_chat_ui():
+    html_content = (TEMPLATES_DIR / "index.html").read_text(encoding="utf-8")
+    return HTMLResponse(content=html_content)
 
 @app.post("/update_floor_plan")
 async def update_floor_plan(
