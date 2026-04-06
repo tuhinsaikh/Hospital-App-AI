@@ -334,11 +334,19 @@ def response_generation_node(state: AgentState) -> dict:
 
     # ── Non-booking intents ─────────────────────────────────────────
     if intent == "EMERGENCY":
+        if not context or not context.strip():
+            return {
+                "messages": [AIMessage(content="🚨 This is an emergency! Please call 911 immediately. I'm sorry, but I don't have floor plan information loaded right now to direct you to the nearest ER.")],
+            }
         system_msg = (
             "This is an emergency. Instruct the user to call 911 immediately. "
             f"Then provide the nearest ER location.\n\nContext:\n{context}"
         )
     elif intent == "NAVIGATION":
+        if not context or not context.strip():
+            return {
+                "messages": [AIMessage(content="I'm sorry, but I don't have any floor plan information loaded right now. Please ask the admin to upload a floor plan so I can help you with directions.")],
+            }
         system_msg = (
             "You are a helpful hospital navigation assistant.\n"
             "CRITICAL: ONLY use the provided context to answer.\n"
