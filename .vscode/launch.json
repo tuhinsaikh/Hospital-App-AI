@@ -17,7 +17,11 @@
                 "--port",
                 "8000"
             ],
-            "jinja": true
+            "jinja": true,
+            "justMyCode": true,
+            "env": {
+                "PYTHONUNBUFFERED": "1"
+            }
         }
     ]
 }

@@ -37,6 +37,7 @@ class BookingService:
     # ── Doctor Queries ──────────────────────────────────────────────
 
     def get_all_doctors(self) -> List[Dict[str, Any]]:
+        print(f"\n[BOOKING_DB get_all_doctors] Querying all doctors...")
         with self.get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
@@ -47,7 +48,11 @@ class BookingService:
                     JOIN departments dep ON d.department_id = dep.id
                     ORDER BY d.id
                 """)
-                return [dict(r) for r in cur.fetchall()]
+                results = [dict(r) for r in cur.fetchall()]
+                print(f"[BOOKING_DB get_all_doctors] Found {len(results)} doctors")
+                for d in results:
+                    print(f"[BOOKING_DB get_all_doctors]   -> id={d['id']}, {d['name']} ({d['specialization']}) dept={d['department']}")
+                return results
 
     def get_doctors_by_department_keyword(self, keyword: str) -> List[Dict[str, Any]]:
         """Intelligently map a health issue to the correct department using the LLM."""
@@ -105,6 +110,7 @@ class BookingService:
         print(f"[TRIAGE] Mapped issue '{keyword}' to department '{dept}'")
 
         # 3. Fetch doctors for the classified department
+        print(f"[BOOKING_DB get_doctors_by_department_keyword] Querying doctors for dept='{dept}'...")
         with self.get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
@@ -116,9 +122,14 @@ class BookingService:
                     WHERE dep.name = %s
                     ORDER BY d.id
                 """, (dept,))
-                return [dict(r) for r in cur.fetchall()]
+                results = [dict(r) for r in cur.fetchall()]
+                print(f"[BOOKING_DB get_doctors_by_department_keyword] Found {len(results)} doctors for dept='{dept}'")
+                for d in results:
+                    print(f"[BOOKING_DB get_doctors_by_department_keyword]   -> id={d['id']}, {d['name']} ({d['specialization']})")
+                return results
 
     def find_doctor_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+        print(f"\n[BOOKING_DB find_doctor_by_name] Searching for doctor: '{name}'")
         with self.get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
@@ -131,12 +142,19 @@ class BookingService:
                     LIMIT 1
                 """, (f"%{name.lower().strip()}%",))
                 row = cur.fetchone()
-                return dict(row) if row else None
+                if row:
+                    result = dict(row)
+                    print(f"[BOOKING_DB find_doctor_by_name] Found: id={result['id']}, {result['name']} ({result['specialization']})")
+                    return result
+                else:
+                    print(f"[BOOKING_DB find_doctor_by_name] No doctor found matching '{name}'")
+                    return None
 
     # ── Slot Queries ────────────────────────────────────────────────
 
     def get_available_slots(self, doctor_id: int, limit: int = 10) -> List[Dict[str, Any]]:
         """Return next N available slots as serializable dicts."""
+        print(f"\n[BOOKING_DB get_available_slots] doctor_id={doctor_id}, limit={limit}")
         with self.get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
@@ -148,7 +166,11 @@ class BookingService:
                     ORDER BY slot_date, start_time
                     LIMIT %s
                 """, (doctor_id, limit))
-                return [_serialize_slot(r) for r in cur.fetchall()]
+                results = [_serialize_slot(r) for r in cur.fetchall()]
+                print(f"[BOOKING_DB get_available_slots] Found {len(results)} available slots")
+                for s in results:
+                    print(f"[BOOKING_DB get_available_slots]   -> id={s['id']}, {s['slot_date']} {s['start_time']}-{s['end_time']}")
+                return results
 
     def get_available_slots_filtered(self, doctor_id: int,
                                       preferred_day: Optional[str] = None,
