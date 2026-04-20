@@ -70,9 +70,13 @@ class BookingExtraction(BaseModel):
 
 def intent_detection_node(state: AgentState) -> dict:
     """Detects intent and formulates a search query using an LLM."""
+    print("\n" + "-"*50)
+    print("[NODE 1: INTENT DETECTION] Starting...")
     llm = _get_llm(temperature=0)
     structured_llm = llm.with_structured_output(IntentOutput)
     messages = state["messages"]
+    print(f"[NODE 1: INTENT DETECTION] User message: '{messages[-1].content}'")
+    print(f"[NODE 1: INTENT DETECTION] Total messages in history: {len(messages)}")
 
     system_prompt = (
         "You are a routing assistant for a hospital.\n"
@@ -89,14 +93,19 @@ def intent_detection_node(state: AgentState) -> dict:
     )
 
     prompt_msgs = [SystemMessage(content=system_prompt)] + list(messages)
+    print(f"[NODE 1: INTENT DETECTION] Calling LLM for structured output...")
     try:
         result = structured_llm.invoke(prompt_msgs)
+        print(f"[NODE 1: INTENT DETECTION] LLM Result: intent={result.intent}, search_query='{result.search_query}'")
         with open("llm_routing_debug.txt", "a") as f:
             f.write(f"--- LLM ROUTING ---\nMsg: {messages[-1].content}\n"
                     f"Intent: {result.intent}\nQuery: {result.search_query}\n---\n")
+        print(f"[NODE 1: INTENT DETECTION] Done.")
+        print("-"*50)
         return {"intent": result.intent, "search_query": result.search_query}
     except Exception as e:
-        print(f"Error in routing: {e}")
+        print(f"[NODE 1: INTENT DETECTION] ERROR: {e}")
+        print("-"*50)
         return {"intent": "OTHER", "search_query": ""}
 
 
@@ -105,10 +114,23 @@ def intent_detection_node(state: AgentState) -> dict:
 # ══════════════════════════════════════════════════════════════════════
 
 def rag_retrieval_node(state: AgentState) -> dict:
+    print("\n" + "-"*50)
+    print("[NODE 2: RAG RETRIEVAL] Starting...")
     intent = state.get("intent")
+    print(f"[NODE 2: RAG RETRIEVAL] Intent={intent}")
     if intent in ("NAVIGATION", "EMERGENCY"):
         sq = state.get("search_query") or state["messages"][-1].content
-        return {"context": rag_service.retrieve(sq)}
+        print(f"[NODE 2: RAG RETRIEVAL] Searching vector DB with query: '{sq}'")
+        context = rag_service.retrieve(sq)
+        print(f"[NODE 2: RAG RETRIEVAL] Context retrieved. Length={len(context)}")
+        if context:
+            print(f"[NODE 2: RAG RETRIEVAL] Context preview: '{context[:200]}...'")
+        else:
+            print(f"[NODE 2: RAG RETRIEVAL] WARNING: No context found in vector DB!")
+        print("-"*50)
+        return {"context": context}
+    print(f"[NODE 2: RAG RETRIEVAL] Skipped (intent is not NAVIGATION/EMERGENCY)")
+    print("-"*50)
     return {"context": ""}
 
 
@@ -328,13 +350,19 @@ def booking_extraction_node(state: AgentState) -> dict:
 
 def response_generation_node(state: AgentState) -> dict:
     """Generates the final response. For BOOKING, uses phase to build the prompt."""
+    print("\n" + "-"*50)
+    print("[NODE 4: RESPONSE GENERATION] Starting...")
     llm = _get_llm(temperature=0)
     intent = state.get("intent")
     context = state.get("context", "")
+    print(f"[NODE 4: RESPONSE GENERATION] Intent={intent}, context_len={len(context)}")
 
     # ── Non-booking intents ─────────────────────────────────────────
     if intent == "EMERGENCY":
+        print(f"[NODE 4: RESPONSE GENERATION] Handling EMERGENCY")
         if not context or not context.strip():
+            print(f"[NODE 4: RESPONSE GENERATION] No context -> returning hardcoded emergency message")
+            print("-"*50)
             return {
                 "messages": [AIMessage(content="🚨 This is an emergency! Please call 911 immediately. I'm sorry, but I don't have floor plan information loaded right now to direct you to the nearest ER.")],
             }
@@ -343,7 +371,10 @@ def response_generation_node(state: AgentState) -> dict:
             f"Then provide the nearest ER location.\n\nContext:\n{context}"
         )
     elif intent == "NAVIGATION":
+        print(f"[NODE 4: RESPONSE GENERATION] Handling NAVIGATION")
         if not context or not context.strip():
+            print(f"[NODE 4: RESPONSE GENERATION] No context -> returning 'no floor plan' message")
+            print("-"*50)
             return {
                 "messages": [AIMessage(content="I'm sorry, but I don't have any floor plan information loaded right now. Please ask the admin to upload a floor plan so I can help you with directions.")],
             }
@@ -355,6 +386,7 @@ def response_generation_node(state: AgentState) -> dict:
             "Do NOT guess or invent locations.\n\n"
             f"Context:\n{context}"
         )
+        print(f"[NODE 4: RESPONSE GENERATION] System prompt with context built.")
 
     # ── BOOKING intent: code-driven flow ────────────────────────────
     elif intent == "BOOKING":
@@ -365,8 +397,11 @@ def response_generation_node(state: AgentState) -> dict:
         selected_slot = state.get("selected_slot") or {}
         patient_name = state.get("patient_name") or ""
         booking_reason = state.get("booking_reason") or ""
+        print(f"[NODE 4: RESPONSE GENERATION] Handling BOOKING phase='{phase}'")
+        print(f"[NODE 4: RESPONSE GENERATION] Doctor={selected_doctor.get('name', 'N/A')}, Slot={selected_slot.get('id', 'N/A')}, Patient={patient_name}, Reason={booking_reason}")
 
         if phase == "ask_problem":
+            print(f"[NODE 4: RESPONSE GENERATION] Phase=ask_problem -> asking user for health issue")
             system_msg = (
                 "You are a hospital booking assistant.\n"
                 "Ask the user: 'Which doctor would you like to book an appointment with, "
@@ -377,8 +412,10 @@ def response_generation_node(state: AgentState) -> dict:
         elif phase == "suggest_doctors":
             # Query doctors based on the reason/issue
             if booking_reason:
+                print(f"[NODE 4: RESPONSE GENERATION] Phase=suggest_doctors -> querying by reason: '{booking_reason}'")
                 doctors = booking_service.get_doctors_by_department_keyword(booking_reason)
             else:
+                print(f"[NODE 4: RESPONSE GENERATION] Phase=suggest_doctors -> querying all doctors")
                 doctors = booking_service.get_all_doctors()
 
             doc_lines = []
@@ -387,6 +424,9 @@ def response_generation_node(state: AgentState) -> dict:
                     f"- {d['name']} ({d['specialization']}) | {d['availability']}"
                 )
             doc_text = "\n".join(doc_lines) if doc_lines else "No doctors found."
+            print(f"[NODE 4: RESPONSE GENERATION] Doctors found: {len(doctors)}")
+            for d in doctors:
+                print(f"[NODE 4: RESPONSE GENERATION]   -> {d['name']} ({d['specialization']}) dept={d['department']}")
 
             system_msg = (
                 "You are a hospital booking assistant.\n"
@@ -402,12 +442,15 @@ def response_generation_node(state: AgentState) -> dict:
 
         elif phase == "select_slot":
             # Show available slots for the selected doctor
+            print(f"[NODE 4: RESPONSE GENERATION] Phase=select_slot -> querying slots for doctor_id={selected_doctor.get('id')}")
             slots = booking_service.get_available_slots(selected_doctor["id"], limit=10)
+            print(f"[NODE 4: RESPONSE GENERATION] Available slots: {len(slots)}")
             slot_lines = []
             for i, s in enumerate(slots, 1):
                 slot_lines.append(
                     f"  Slot {i}: {s['slot_date']} | {s['start_time']} - {s['end_time']}"
                 )
+                print(f"[NODE 4: RESPONSE GENERATION]   -> Slot {i}: {s['slot_date']} {s['start_time']}-{s['end_time']}")
             slot_text = "\n".join(slot_lines) if slot_lines else "No available slots."
 
             system_msg = (
@@ -423,6 +466,7 @@ def response_generation_node(state: AgentState) -> dict:
             )
 
         elif phase == "ask_name":
+            print(f"[NODE 4: RESPONSE GENERATION] Phase=ask_name -> asking patient name")
             system_msg = (
                 "You are a hospital booking assistant.\n"
                 f"The user has chosen {selected_doctor['name']} "
@@ -432,6 +476,7 @@ def response_generation_node(state: AgentState) -> dict:
             )
 
         elif phase == "confirm":
+            print(f"[NODE 4: RESPONSE GENERATION] Phase=confirm -> showing booking summary")
             system_msg = (
                 "You are a hospital booking assistant.\n"
                 "Show the user a booking summary and ask for confirmation:\n\n"
@@ -447,6 +492,7 @@ def response_generation_node(state: AgentState) -> dict:
 
         elif phase == "book":
             # ── DETERMINISTIC BOOKING — no LLM involved ────────────
+            print(f"[NODE 4: RESPONSE GENERATION] Phase=book -> EXECUTING BOOKING")
             print(f"[BOOKING DB] Attempting to book: doctor_id={selected_doctor.get('id')}, "
                   f"slot_id={selected_slot.get('id')}, patient={patient_name}, reason={booking_reason}")
             result = booking_service.book_appointment(
@@ -476,9 +522,12 @@ def response_generation_node(state: AgentState) -> dict:
                 )
 
             # Reset booking state after booking attempt
+            print(f"[NODE 4: RESPONSE GENERATION] Generating LLM response for booking result...")
             response = llm.invoke(
                 [SystemMessage(content=system_msg)] + list(state["messages"])
             )
+            print(f"[NODE 4: RESPONSE GENERATION] Done. Response: {response.content[:200]}...")
+            print("-"*50)
             return {
                 "messages": [response],
                 "booking_phase": "done",
@@ -486,17 +535,22 @@ def response_generation_node(state: AgentState) -> dict:
 
         else:
             # phase == "done" or unknown — general assistant
+            print(f"[NODE 4: RESPONSE GENERATION] Phase=done -> asking if anything else needed")
             system_msg = (
                 "You are a hospital assistant. The user's previous booking is complete. "
                 "Ask if there is anything else you can help with."
             )
 
     else:
+        print(f"[NODE 4: RESPONSE GENERATION] Handling OTHER/unknown intent")
         system_msg = "You are a general hospital assistant. Answer nicely and ask for clarification."
 
     # ── Generate response ───────────────────────────────────────────
+    print(f"[NODE 4: RESPONSE GENERATION] Calling LLM for final response...")
     messages = [SystemMessage(content=system_msg)] + list(state["messages"])
     response = llm.invoke(messages)
+    print(f"[NODE 4: RESPONSE GENERATION] LLM Response: {response.content[:200]}...")
+    print("-"*50)
     return {"messages": [response]}
 
 

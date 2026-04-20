@@ -14,11 +14,13 @@ class VisionService:
             api_key = os.getenv("GOOGLE_API_KEY")
             if not api_key or api_key == "your_gemini_api_key_here":
                 raise ValueError("GOOGLE_API_KEY not set for Gemini Vision.")
+            print(f"[VISION_SERVICE] Using Gemini Vision (gemini-1.5-flash)")
             return ChatGoogleGenerativeAI(model="gemini-1.5-flash")
         else:
             # Default to local (Ollama)
             base_url = os.getenv("OLLAMA_BASE_URL") or "http://192.168.1.202:11434"
             model = os.getenv("OLLAMA_VISION_MODEL") or "gemma3:27b"
+            print(f"[VISION_SERVICE] Using local Ollama Vision: model={model}, base_url={base_url}")
             return ChatOllama(base_url=base_url, model=model, temperature=0.1)
 
     def extract_floor_plan_from_image(self, file_bytes: bytes, mime_type: str = "image/jpeg") -> str:
@@ -51,10 +53,14 @@ class VisionService:
         
         try:
             # Invoke the VLM
+            print(f"[VISION_SERVICE] Sending image to VLM...")
             response = llm.invoke([message])
+            print(f"[VISION_SERVICE] VLM response received. Length={len(response.content)}")
+            print(f"[VISION_SERVICE] Response preview: {response.content[:300]}...")
             return response.content
         except Exception as e:
-             raise Exception(f"Failed to process image with Vision model ({self.provider}): {str(e)}")
+            print(f"[VISION_SERVICE] ERROR: {e}")
+            raise Exception(f"Failed to process image with Vision model ({self.provider}): {str(e)}")
 
 # Singleton instance
 vision_service = VisionService()
