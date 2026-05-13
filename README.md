@@ -33,6 +33,10 @@ cd backend
 python run_migration.py
 python run_sql.py
 cd ..
+
+python run_sql.py - Created the base hospital schema (doctors, patients, appointments) and populated it with dummy data.
+python run_migration.py - Added the time_slots table (which depends on doctors) and generated 432 available slots.
+python run_nav_migration.py - Finally, added the navigation_graphs table for the indoor navigation feature.
 ```
 
 ### 5. Run the Application
