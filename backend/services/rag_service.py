@@ -1,16 +1,12 @@
 import os
 import uuid
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_postgres import PGVector
-from langchain_postgres.vectorstores import PGVector
+from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 class RAGService:
     def __init__(self):
-        # Allow connecting to a real PostgreSQL instance via environment variable
-        self.postgres_url = os.getenv("POSTGRES_URL", "postgresql://postgres:postgres@localhost:5432/hospital")
-        self.collection_name = "hospital_data"
         # Using a free, open-source local embedding model
         self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         
@@ -21,18 +17,9 @@ class RAGService:
             separators=["\n\n", "\n", ".", " ", ""]
         )
         
-        # Initialize the PGVector logic
-        print(f"[RAG_SERVICE] Connecting to PostgreSQL: {self.postgres_url[:50]}...")
-        self.vector_store = PGVector(
-            embeddings=self.embeddings,
-            collection_name=self.collection_name,
-            connection=self.postgres_url,
-            use_jsonb=True,
-        )
-        # Ensure tables and collection exist, especially if previously dropped
-        self.vector_store.create_tables_if_not_exists()
-        self.vector_store.create_collection()
-        print(f"[RAG_SERVICE] PGVector initialized. Collection='{self.collection_name}'")
+        # Initialize the FAISS logic (lazily created upon first document insertion)
+        self.vector_store = None
+        print("[RAG_SERVICE] FAISS vector store initialized (lazy).")
 
     def insert_document(self, document: str, base_id: str | None = None) -> list[str]:
         """Dynamically inserts a large floor plan, splitting it into vector chunks."""
@@ -55,22 +42,28 @@ class RAGService:
                 metadata={"id": point_id}
             ))
             
-        print(f"[RAG_SERVICE insert_document] Adding {len(docs_to_insert)} documents to PGVector...")
-        self.vector_store.add_documents(docs_to_insert, ids=point_ids)
+        print(f"[RAG_SERVICE insert_document] Adding {len(docs_to_insert)} documents to FAISS...")
+        if self.vector_store is None:
+            self.vector_store = FAISS.from_documents(docs_to_insert, self.embeddings)
+        else:
+            self.vector_store.add_documents(docs_to_insert)
         print(f"[RAG_SERVICE insert_document] Done. IDs={point_ids}")
         return point_ids
 
     def clear_database(self):
-        """Clears all data by dropping the specific collection."""
-        print(f"\n[RAG_SERVICE clear_database] Dropping collection '{self.collection_name}'...")
-        self.vector_store.delete_collection()
-        print(f"[RAG_SERVICE clear_database] Recreating collection '{self.collection_name}'...")
-        self.vector_store.create_collection()
+        """Clears all data by resetting the vector store."""
+        print(f"\n[RAG_SERVICE clear_database] Resetting FAISS vector store...")
+        self.vector_store = None
         print(f"[RAG_SERVICE clear_database] Done.")
 
     def retrieve(self, query: str, top_k: int = 2) -> str:
         """Retrieves top_k context documents based on the query vector."""
         print(f"\n[RAG_SERVICE retrieve] Query='{query}', top_k={top_k}")
+        
+        if self.vector_store is None:
+            print("[RAG_SERVICE retrieve] Vector store is empty! No results found.")
+            return ""
+            
         search_result = self.vector_store.similarity_search(query, k=top_k)
         
         if not search_result:

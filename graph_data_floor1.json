@@ -1,0 +1,360 @@
+{
+  "floor_number": 1,
+  "floor_name": "Second Floor Plan",
+  "image_width": 1280,
+  "image_height": 870,
+  "graph_data": {
+    "nodes": [
+      {
+        "id": "men_restroom",
+        "label": "Men",
+        "x": 80,
+        "y": 180,
+        "type": "restroom",
+        "door": {
+          "x": 165,
+          "y": 270
+        }
+      },
+      {
+        "id": "women_restroom",
+        "label": "Women",
+        "x": 300,
+        "y": 180,
+        "type": "restroom",
+        "door": {
+          "x": 300,
+          "y": 270
+        }
+      },
+      {
+        "id": "corridor_top",
+        "label": "Corridor",
+        "x": 300,
+        "y": 270,
+        "type": "corridor"
+      },
+      {
+        "id": "junction_center",
+        "label": "",
+        "x": 530,
+        "y": 270,
+        "type": "junction"
+      },
+      {
+        "id": "junction_south",
+        "label": "",
+        "x": 530,
+        "y": 430,
+        "type": "junction"
+      },
+      {
+        "id": "junction_bottom",
+        "label": "",
+        "x": 530,
+        "y": 640,
+        "type": "junction"
+      },
+      {
+        "id": "sterilizer",
+        "label": "Sterilizer",
+        "x": 250,
+        "y": 360,
+        "type": "room",
+        "door": {
+          "x": 300,
+          "y": 360
+        }
+      },
+      {
+        "id": "delivery_rm",
+        "label": "Delivery RM",
+        "x": 80,
+        "y": 430,
+        "type": "room",
+        "door": {
+          "x": 165,
+          "y": 430
+        }
+      },
+      {
+        "id": "scrub",
+        "label": "Scrub",
+        "x": 250,
+        "y": 430,
+        "type": "room",
+        "door": {
+          "x": 300,
+          "y": 430
+        }
+      },
+      {
+        "id": "prenatal_labour_rm",
+        "label": "Pre-Natal / Labour RM",
+        "x": 400,
+        "y": 400,
+        "type": "room",
+        "door": {
+          "x": 440,
+          "y": 430
+        }
+      },
+      {
+        "id": "lobby",
+        "label": "Lobby",
+        "x": 630,
+        "y": 270,
+        "type": "room",
+        "door": {
+          "x": 580,
+          "y": 270
+        }
+      },
+      {
+        "id": "staircase_dn",
+        "label": "DN (Stairs Down)",
+        "x": 580,
+        "y": 150,
+        "type": "staircase"
+      },
+      {
+        "id": "staircase_up",
+        "label": "UP (Stairs Up)",
+        "x": 530,
+        "y": 210,
+        "type": "staircase"
+      },
+      {
+        "id": "nurses_station_1",
+        "label": "Nurses' Station (Central)",
+        "x": 630,
+        "y": 430,
+        "type": "nurse_station",
+        "door": {
+          "x": 580,
+          "y": 430
+        }
+      },
+      {
+        "id": "aseptic",
+        "label": "Aseptic",
+        "x": 320,
+        "y": 510,
+        "type": "room",
+        "door": {
+          "x": 320,
+          "y": 550
+        }
+      },
+      {
+        "id": "nurses_station_left",
+        "label": "Nurses' Station (Left)",
+        "x": 260,
+        "y": 530,
+        "type": "nurse_station",
+        "door": {
+          "x": 300,
+          "y": 550
+        }
+      },
+      {
+        "id": "clean_corridor",
+        "label": "Clean Corridor",
+        "x": 440,
+        "y": 510,
+        "type": "corridor"
+      },
+      {
+        "id": "store",
+        "label": "Store",
+        "x": 120,
+        "y": 590,
+        "type": "room",
+        "door": {
+          "x": 180,
+          "y": 590
+        }
+      },
+      {
+        "id": "recovery_rm",
+        "label": "Recovery RM",
+        "x": 160,
+        "y": 660,
+        "type": "room",
+        "door": {
+          "x": 180,
+          "y": 620
+        }
+      },
+      {
+        "id": "paediatrics",
+        "label": "Paediatrics",
+        "x": 430,
+        "y": 610,
+        "type": "room",
+        "door": {
+          "x": 440,
+          "y": 570
+        }
+      },
+      {
+        "id": "nurses_room",
+        "label": "Nurses' Room",
+        "x": 870,
+        "y": 240,
+        "type": "room",
+        "door": {
+          "x": 780,
+          "y": 270
+        }
+      },
+      {
+        "id": "nurses_station_2",
+        "label": "Nurses' Station (Right)",
+        "x": 1050,
+        "y": 370,
+        "type": "nurse_station",
+        "door": {
+          "x": 960,
+          "y": 370
+        }
+      },
+      {
+        "id": "female_ward",
+        "label": "Female Ward",
+        "x": 950,
+        "y": 500,
+        "type": "room",
+        "door": {
+          "x": 950,
+          "y": 430
+        }
+      },
+      {
+        "id": "waiting",
+        "label": "Waiting",
+        "x": 650,
+        "y": 640,
+        "type": "waiting_area",
+        "door": {
+          "x": 580,
+          "y": 640
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "men_restroom",
+        "to": "corridor_top"
+      },
+      {
+        "from": "women_restroom",
+        "to": "corridor_top"
+      },
+      {
+        "from": "corridor_top",
+        "to": "junction_center"
+      },
+      {
+        "from": "junction_center",
+        "to": "lobby"
+      },
+      {
+        "from": "junction_center",
+        "to": "staircase_up"
+      },
+      {
+        "from": "staircase_up",
+        "to": "staircase_dn"
+      },
+      {
+        "from": "lobby",
+        "to": "staircase_dn"
+      },
+      {
+        "from": "corridor_top",
+        "to": "sterilizer"
+      },
+      {
+        "from": "sterilizer",
+        "to": "delivery_rm"
+      },
+      {
+        "from": "sterilizer",
+        "to": "scrub"
+      },
+      {
+        "from": "scrub",
+        "to": "prenatal_labour_rm"
+      },
+      {
+        "from": "prenatal_labour_rm",
+        "to": "clean_corridor"
+      },
+      {
+        "from": "junction_center",
+        "to": "junction_south"
+      },
+      {
+        "from": "junction_south",
+        "to": "nurses_station_1"
+      },
+      {
+        "from": "junction_south",
+        "to": "junction_bottom"
+      },
+      {
+        "from": "scrub",
+        "to": "aseptic"
+      },
+      {
+        "from": "aseptic",
+        "to": "nurses_station_left"
+      },
+      {
+        "from": "aseptic",
+        "to": "clean_corridor"
+      },
+      {
+        "from": "clean_corridor",
+        "to": "paediatrics"
+      },
+      {
+        "from": "nurses_station_left",
+        "to": "store"
+      },
+      {
+        "from": "store",
+        "to": "recovery_rm"
+      },
+      {
+        "from": "lobby",
+        "to": "nurses_room"
+      },
+      {
+        "from": "nurses_room",
+        "to": "nurses_station_2"
+      },
+      {
+        "from": "nurses_station_2",
+        "to": "female_ward"
+      },
+      {
+        "from": "nurses_station_1",
+        "to": "waiting"
+      },
+      {
+        "from": "junction_bottom",
+        "to": "waiting"
+      },
+      {
+        "from": "waiting",
+        "to": "female_ward"
+      },
+      {
+        "from": "nurses_station_1",
+        "to": "clean_corridor"
+      }
+    ]
+  }
+}

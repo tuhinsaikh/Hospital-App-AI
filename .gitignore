@@ -12,3 +12,6 @@ __pycache__/
 
 # Qdrant local storage (if any created in the future)
 qdrant_storage/
+
+# Runtime floor-plan edit drafts
+backend/tmp/

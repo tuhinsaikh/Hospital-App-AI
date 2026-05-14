@@ -13,3 +13,6 @@ langchain-text-splitters
 langchain-ollama
 python-multipart
 langchain-google-genai
+Pillow
+faiss-cpu
+langchain-community

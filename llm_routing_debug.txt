@@ -663,3 +663,278 @@ Msg: General physician
 Intent: BOOKING
 Query: 
 ---
+--- LLM ROUTING ---
+Msg: Can you tell me where is maternity word is?
+Intent: NAVIGATION
+Query: maternity ward
+---
+--- LLM ROUTING ---
+Msg: Now tell me my first question answer
+Intent: NAVIGATION
+Query: maternity ward
+---
+--- LLM ROUTING ---
+Msg: guide me to reach there
+Intent: NAVIGATION
+Query: 
+---
+--- LLM ROUTING ---
+Msg: tell me where is lift?
+Intent: NAVIGATION
+Query: 
+---
+--- LLM ROUTING ---
+Msg: how to go there?
+Intent: NAVIGATION
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I need to ask for wait to delivery, where I need to go and wait?
+Intent: NAVIGATION
+Query: wait to delivery location
+---
+--- LLM ROUTING ---
+Msg: Where is the xray room? Can you guide me.
+Intent: NAVIGATION
+Query: xray room
+---
+--- LLM ROUTING ---
+Msg: I want to go labour room, can you guide me
+Intent: NAVIGATION
+Query: labor room
+---
+--- LLM ROUTING ---
+Msg: Where is female word located? I am standing at the lobby.
+Intent: NAVIGATION
+Query: female ward
+---
+--- LLM ROUTING ---
+Msg: where is xray room?
+Intent: NAVIGATION
+Query: x-ray room
+---
+--- LLM ROUTING ---
+Msg: Tell me where is xray room?
+Intent: NAVIGATION
+Query: x-ray room
+---
+--- LLM ROUTING ---
+Msg: Can you tell me about x-ray room, where it is?
+Intent: NAVIGATION
+Query: x-ray room location
+---
+--- LLM ROUTING ---
+Msg: where is x-ray room?
+Intent: NAVIGATION
+Query: x ray room
+---
+--- LLM ROUTING ---
+Msg: Step by step guide me for reach there.
+Intent: NAVIGATION
+Query: diagnostic imaging department
+---
+--- LLM ROUTING ---
+Msg: how to reach x-ray room?
+Intent: NAVIGATION
+Query: how to reach x ray room
+---
+--- LLM ROUTING ---
+Msg: can you help me to find xray room?
+Intent: NAVIGATION
+Query: xray room
+---
+--- LLM ROUTING ---
+Msg: hello
+Intent: OTHER
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Tell me where is xray room?
+Intent: NAVIGATION
+Query: xray room
+---
+--- LLM ROUTING ---
+Msg: I think you have data, now tell me how to go xray room?
+Intent: NAVIGATION
+Query: xray room
+---
+--- LLM ROUTING ---
+Msg: I am at the dining room, how to go there?
+Intent: NAVIGATION
+Query: from dining room to xray room
+---
+--- LLM ROUTING ---
+Msg: I am at the dinning room, how to go there?
+Intent: NAVIGATION
+Query: dining room location
+---
+--- LLM ROUTING ---
+Msg: I want to go xray room
+Intent: NAVIGATION
+Query: xray room location
+---
+--- LLM ROUTING ---
+Msg: I am having skin problem
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: I want to go first floor
+Intent: NAVIGATION
+Query: first floor
+---
+--- LLM ROUTING ---
+Msg: Where is USG department?
+Intent: NAVIGATION
+Query: USG department location
+---
+--- LLM ROUTING ---
+Msg: I want to go to ultra sound department
+Intent: NAVIGATION
+Query: ultrasound department
+---
+--- LLM ROUTING ---
+Msg: I want to register patient, where to go?
+Intent: BOOKING
+Query: 
+---
+--- LLM ROUTING ---
+Msg: Do you know where is elevator?
+Intent: NAVIGATION
+Query: elevator location in hospital
+---
+--- LLM ROUTING ---
+Msg: where is x-ray department?
+Intent: NAVIGATION
+Query: x ray department
+---
+--- LLM ROUTING ---
+Msg: How to go there?
+Intent: NAVIGATION
+Query: elevators to X-Ray department
+---
+--- LLM ROUTING ---
+Msg: where is MRI room?
+Intent: NAVIGATION
+Query: MRI room location
+---
+--- LLM ROUTING ---
+Msg: where is x-ray department?
+Intent: NAVIGATION
+Query: x-ray department
+---
+--- LLM ROUTING ---
+Msg: tell me where usg room?
+Intent: NAVIGATION
+Query: USG room location
+---
+--- LLM ROUTING ---
+Msg: Can you tell me how to reach me
+Intent: OTHER
+Query: 
+---
+--- LLM ROUTING ---
+Msg: How to reach Maternity hall?
+Intent: NAVIGATION
+Query: Maternity hall hospital
+---
+--- LLM ROUTING ---
+Msg: where is x ray?
+Intent: NAVIGATION
+Query: x ray department hospital
+---
+--- LLM ROUTING ---
+Msg: tell me where is female word?
+Intent: OTHER
+Query: 
+---
+--- LLM ROUTING ---
+Msg: where is female word?
+Intent: NAVIGATION
+Query: female ward
+---
+--- LLM ROUTING ---
+Msg: I am at the first floor, how to go there?
+Intent: NAVIGATION
+Query: Female Ward F-H from first floor
+---
+--- LLM ROUTING ---
+Msg: I am at the men's toilet, now how to go there?
+Intent: NAVIGATION
+Query: female ward from men's toilet
+---
+--- LLM ROUTING ---
+Msg: How to go from men's restroom to female ward.
+Intent: NAVIGATION
+Query: men's restroom to female ward
+---
+--- LLM ROUTING ---
+Msg: How can I reach female word from men's toilet?
+Intent: NAVIGATION
+Query: female restroom from men's toilet
+---
+--- LLM ROUTING ---
+Msg: How can I reach female word from men's toilet?
+Intent: NAVIGATION
+Query: female ward from men's toilet
+---
+--- LLM ROUTING ---
+Msg: I want to go female word from men's toilet.
+Intent: NAVIGATION
+Query: female restroom from men's toilet
+---
+--- LLM ROUTING ---
+Msg: I want to go women_node from pre_natal_room.
+Intent: NAVIGATION
+Query: women's restroom from pre natal room
+---
+--- LLM ROUTING ---
+Msg: I want to go female word from lobby.
+Intent: NAVIGATION
+Query: female restroom from lobby
+---
+--- LLM ROUTING ---
+Msg: How I can reach Labour Room from men's toilet.
+Intent: NAVIGATION
+Query: labour room from men's toilet
+---
+--- LLM ROUTING ---
+Msg: How I can reach Labour Room from men's toilet.
+Intent: NAVIGATION
+Query: Labour Room from men's toilet
+---
+--- LLM ROUTING ---
+Msg: How I can reach Labour Room from men's toilet.
+Intent: NAVIGATION
+Query: Labour Room from Men's Restroom
+---
+--- LLM ROUTING ---
+Msg: where is x-ray department?
+Intent: NAVIGATION
+Query: x ray department
+---
+--- LLM ROUTING ---
+Msg: where is female word?
+Intent: NAVIGATION
+Query: female ward
+---
+--- LLM ROUTING ---
+Msg: how to go female word from men's toilet?
+Intent: NAVIGATION
+Query: female ward from men's toilet
+---
+--- LLM ROUTING ---
+Msg: Can you tell me how can I reach female word from women's toilet?
+Intent: NAVIGATION
+Query: women's toilet
+---
+--- LLM ROUTING ---
+Msg: I am at the second floor of the hospital, standing in front of men's toilet, how to reach female word?
+Intent: NAVIGATION
+Query: female ward from men's toilet second floor hospital
+---
+--- LLM ROUTING ---
+Msg: I am at the second floor of the hospital, standing in front of men's toilet, how to reach female word?
+Intent: NAVIGATION
+Query: female restroom second floor hospital
+---

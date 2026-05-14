@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Floor Plan Editor</title>
+    <meta name="description" content="Upload and edit hospital floor plans. Manage navigation graphs for indoor pathfinding.">
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+
+<!-- ── Left Sidebar ────────────────────────────── -->
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <span class="logo">⚙️</span>
+        <h1>Floor Plan Editor</h1>
+        <a href="/" class="back-btn" title="Back to Chat">💬</a>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <div class="section-title">Upload Floor Plan</div>
+
+        <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept="image/*">
+            <span class="drop-zone-icon">📁</span>
+            <div class="drop-zone-text">
+                <strong>Click or drag</strong> a floor plan image here<br>
+                PNG, JPG up to 20MB
+            </div>
+        </div>
+
+        <div class="file-preview" id="filePreview">
+            <span>📄</span>
+            <span class="file-name" id="fileName"></span>
+            <button class="file-remove" id="fileRemove" title="Remove file">&times;</button>
+        </div>
+
+        <div class="floor-input-group">
+            <label for="floorSelect">Floor:</label>
+            <select id="floorSelect">
+                <option value="1">Floor 1</option>
+                <option value="2">Floor 2</option>
+                <option value="3">Floor 3</option>
+                <option value="4">Floor 4</option>
+                <option value="5">Floor 5</option>
+            </select>
+        </div>
+
+        <button class="upload-btn" id="uploadBtn" disabled>
+            🚀 Upload & Extract
+        </button>
+    </div>
+
+    <!-- Graph Info (shown after extraction) -->
+    <div class="graph-info" id="graphInfo">
+        <div class="section-title">Graph Overview</div>
+        <div class="graph-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="statNodes">0</div>
+                <div class="stat-label">Nodes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statEdges">0</div>
+                <div class="stat-label">Edges</div>
+            </div>
+        </div>
+
+        <button class="save-btn" id="saveBtn" onclick="saveGraph()">
+            💾 Save to Database
+        </button>
+        <button class="reset-btn" id="resetBtn" onclick="resetGraph()">
+            ↩ Reset to AI Extraction
+        </button>
+    </div>
+
+    <!-- Node Properties (shown when a node is selected) -->
+    <div class="node-properties" id="nodeProperties">
+        <div class="section-title">Node Properties</div>
+        <div class="prop-title">
+            <span>📍</span>
+            <span id="propNodeId">—</span>
+        </div>
+
+        <div class="prop-group">
+            <label for="propLabel">Label</label>
+            <input type="text" id="propLabel" placeholder="e.g. Main Entrance">
+        </div>
+
+        <div class="prop-group">
+            <label for="propType">Type</label>
+            <select id="propType">
+                <option value="room">Room</option>
+                <option value="corridor">Corridor</option>
+                <option value="junction">Junction</option>
+                <option value="entrance">Entrance</option>
+                <option value="staircase">Staircase</option>
+                <option value="elevator">Elevator</option>
+                <option value="restroom">Restroom</option>
+                <option value="nurse_station">Nurse Station</option>
+                <option value="waiting_area">Waiting Area</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="prop-group">
+            <label>Coordinates</label>
+            <div class="prop-coords">
+                <input type="number" id="propX" placeholder="X">
+                <input type="number" id="propY" placeholder="Y">
+            </div>
+        </div>
+
+        <div class="prop-group">
+            <label>Door / Route Anchor</label>
+            <div class="prop-coords">
+                <input type="number" id="propDoorX" placeholder="Door X">
+                <input type="number" id="propDoorY" placeholder="Door Y">
+            </div>
+        </div>
+
+        <button class="reset-btn" id="placeDoorBtn" onclick="startDoorForSelectedNode()">
+            Place Door
+        </button>
+
+        <button class="delete-node-btn" id="deleteNodeBtn" onclick="deleteSelectedNode()">
+            🗑 Delete Node
+        </button>
+    </div>
+</aside>
+
+<!-- ── Main Canvas Area ────────────────────────── -->
+<main class="main-area">
+    <!-- Toolbar -->
+    <div class="toolbar" id="toolbar">
+        <div class="toolbar-group">
+            <button class="tool-btn active" data-mode="select" onclick="setMode('select')">
+                <span class="tool-icon">🖱</span> Select
+            </button>
+            <button class="tool-btn" data-mode="add-node" onclick="setMode('add-node')">
+                <span class="tool-icon">⊕</span> Add Node
+            </button>
+            <button class="tool-btn" data-mode="add-door" onclick="setMode('add-door')">
+                <span class="tool-icon">▣</span> Add Door
+            </button>
+            <button class="tool-btn" data-mode="add-edge" onclick="setMode('add-edge')">
+                <span class="tool-icon">🔗</span> Add Edge
+            </button>
+            <button class="tool-btn" data-mode="delete" onclick="setMode('delete')">
+                <span class="tool-icon">🗑</span> Delete
+            </button>
+        </div>
+
+        <div class="toolbar-group">
+            <button class="tool-btn" onclick="zoomIn()">
+                <span class="tool-icon">🔍+</span>
+            </button>
+            <button class="tool-btn" onclick="zoomOut()">
+                <span class="tool-icon">🔍−</span>
+            </button>
+            <button class="tool-btn" onclick="fitToView()">
+                <span class="tool-icon">⊡</span> Fit
+            </button>
+        </div>
+
+        <div class="toolbar-spacer"></div>
+        <span class="toolbar-hint" id="toolbarHint">Click & drag to move nodes</span>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-container" id="canvasContainer">
+        <canvas id="graphCanvas"></canvas>
+
+        <!-- Empty state -->
+        <div class="empty-state" id="emptyState">
+            <span class="empty-icon">🗺️</span>
+            <div class="empty-text">
+                <strong>No floor plan loaded</strong><br>
+                Upload an image to get started
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="statusBar">
+        <span id="statusZoom">Zoom: 100%</span>
+        <span class="sep">|</span>
+        <span id="statusMouse">X: — Y: —</span>
+        <span class="sep">|</span>
+        <span id="statusMode">Mode: Select</span>
+    </div>
+</main>
+
+<!-- ═══════════════════════════════════════════════
+     PROCESSING OVERLAY
+     ═══════════════════════════════════════════════ -->
+<div class="processing-overlay" id="processingOverlay">
+    <div class="processing-card">
+        <div class="processing-title">Processing Floor Plan</div>
+        <div class="processing-subtitle" id="processingSubtitle">Analyzing image with AI...</div>
+
+        <!-- Progress Ring -->
+        <div class="progress-ring-container">
+            <div class="progress-ring-wrapper">
+                <svg class="progress-ring" width="100" height="100" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color: #22d3ee"/>
+                            <stop offset="100%" style="stop-color: #e879f9"/>
+                        </linearGradient>
+                    </defs>
+                    <circle class="progress-ring-bg" cx="50" cy="50" r="42"/>
+                    <circle class="progress-ring-fill" id="progressRing" cx="50" cy="50" r="42"/>
+                </svg>
+                <div class="progress-percent" id="progressPercent">0%</div>
+            </div>
+        </div>
+
+        <!-- Steps -->
+        <div class="processing-steps" id="processingSteps">
+            <div class="processing-step" data-step="1">
+                <div class="step-indicator">1</div>
+                <div class="step-text">Reading image file</div>
+            </div>
+            <div class="processing-step" data-step="2">
+                <div class="step-indicator">2</div>
+                <div class="step-text">Analyzing image dimensions</div>
+            </div>
+            <div class="processing-step" data-step="3">
+                <div class="step-indicator">3</div>
+                <div class="step-text">AI text extraction (Pass 1)</div>
+            </div>
+            <div class="processing-step" data-step="4">
+                <div class="step-indicator">4</div>
+                <div class="step-text">Inserting into vector database</div>
+            </div>
+            <div class="processing-step" data-step="5">
+                <div class="step-indicator">5</div>
+                <div class="step-text">AI graph extraction (Pass 2)</div>
+            </div>
+            <div class="processing-step" data-step="6">
+                <div class="step-indicator">6</div>
+                <div class="step-text">Saving floor plan image</div>
+            </div>
+            <div class="processing-step" data-step="7">
+                <div class="step-indicator">7</div>
+                <div class="step-text">Saving navigation graph</div>
+            </div>
+            <div class="processing-step" data-step="8">
+                <div class="step-indicator">8</div>
+                <div class="step-text">Complete</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ADD NODE MODAL
+     ═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="addNodeModal">
+    <div class="modal-card">
+        <h3>⊕ Add New Node</h3>
+        <div class="prop-group">
+            <label for="newNodeLabel">Label</label>
+            <input type="text" id="newNodeLabel" placeholder="e.g. Reception Desk">
+        </div>
+        <div class="prop-group">
+            <label for="newNodeType">Type</label>
+            <select id="newNodeType">
+                <option value="room">Room</option>
+                <option value="corridor">Corridor</option>
+                <option value="junction">Junction</option>
+                <option value="entrance">Entrance</option>
+                <option value="staircase">Staircase</option>
+                <option value="elevator">Elevator</option>
+                <option value="restroom">Restroom</option>
+                <option value="nurse_station">Nurse Station</option>
+                <option value="waiting_area">Waiting Area</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="cancelAddNode()">Cancel</button>
+            <button class="btn-confirm" onclick="confirmAddNode()">Add Node</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- App Script -->
+<script src="/static/js/admin.js"></script>
+
+</body>
+</html>

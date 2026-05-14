@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Indoor Navigation</title>
+    <meta name="description" content="Interactive indoor navigation for the hospital. Find the shortest path between any two locations.">
+    <!-- Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- App Styles -->
+    <link rel="stylesheet" href="/static/css/navigation.css">
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <span class="logo">🏥</span>
+        <h1>Indoor Navigation</h1>
+        <a href="/" class="back-btn" title="Back to Chat">💬</a>
+    </div>
+
+    <!-- Search Panel -->
+    <div class="search-panel">
+        <div class="search-inputs-wrapper">
+            <div class="search-group">
+                <label for="sourceInput">From</label>
+                <div class="input-wrapper">
+                    <span class="icon">🟢</span>
+                    <input type="text" id="sourceInput" placeholder="e.g. Men's Toilet"
+                           autocomplete="off" spellcheck="false">
+                </div>
+                <div class="autocomplete-list" id="sourceDropdown"></div>
+            </div>
+
+            <div class="search-group">
+                <label for="destInput">To</label>
+                <div class="input-wrapper">
+                    <span class="icon">🔴</span>
+                    <input type="text" id="destInput" placeholder="e.g. Female Ward"
+                           autocomplete="off" spellcheck="false">
+                </div>
+                <div class="autocomplete-list" id="destDropdown"></div>
+            </div>
+
+            <button class="swap-btn" onclick="swapLocations()" title="Swap locations">⇅</button>
+        </div>
+
+        <button class="navigate-btn" id="navigateBtn" onclick="navigate()">
+            🧭 Navigate
+        </button>
+    </div>
+
+    <!-- Walk Summary -->
+    <div class="walk-summary" id="walkSummary">
+        <div class="walk-stat">
+            <div class="value" id="walkSteps">—</div>
+            <div class="label">Waypoints</div>
+        </div>
+        <div class="walk-stat">
+            <div class="value" id="walkTime">—</div>
+            <div class="label">Est. Walk</div>
+        </div>
+    </div>
+
+    <!-- Directions -->
+    <div class="directions-panel">
+        <div class="directions-header">Directions</div>
+        <div id="directionsContent">
+            <div class="directions-empty">
+                <span class="empty-icon">🗺️</span>
+                Select a starting point and destination<br>
+                to see turn-by-turn directions
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- ── Map Area ─────────────────────────────────── -->
+<main class="map-area">
+    <div id="mapDiv"></div>
+
+    <!-- Floor Selector -->
+    <div class="floor-selector">
+        <button class="floor-btn active" data-floor="1" onclick="setFloor(1)">Floor 1</button>
+        <button class="floor-btn" data-floor="2" onclick="setFloor(2)">Floor 2</button>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="map-status" id="mapStatus">
+        🗺️ Loading floor plan...
+    </div>
+</main>
+
+<!-- App Script -->
+<script src="/static/js/navigation.js"></script>
+
+<!-- Keyboard shortcut: Enter to navigate -->
+<script>
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (document.activeElement.id === 'sourceInput' || document.activeElement.id === 'destInput')) {
+        navigate();
+    }
+});
+</script>
+
+</body>
+</html>

@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph, END
 from langchain_core.messages import BaseMessage, SystemMessage, AIMessage
 from pydantic import BaseModel, Field
 from backend.services.rag_service import rag_service
+from backend.services.navigation_service import navigation_service
 
 
 # ── LLM Factory ─────────────────────────────────────────────────────
@@ -29,6 +30,7 @@ class AgentState(TypedDict):
     intent: str
     search_query: str
     context: str
+    navigation_hints: Optional[dict]
     # Booking-specific fields
     booking_phase: str            # "", "ask_problem", "suggest_doctors", "select_slot", "ask_name", "confirm", "done"
     selected_doctor: dict         # {id, name, specialization, availability, department}
@@ -38,6 +40,33 @@ class AgentState(TypedDict):
 
 
 # ── Structured Output Models ────────────────────────────────────────
+
+class NavigationExtraction(BaseModel):
+    source: Optional[str] = Field(default=None, description="Where the user currently is or starting from")
+    destination: Optional[str] = Field(default=None, description="Where the user wants to go")
+
+
+def _navigation_path_text(path_result: dict) -> str:
+    """Create a concise answer from the saved navigation graph path."""
+    path = path_result.get("path", [])
+    named_steps = []
+    for point in path:
+        label = (point.get("label") or "").strip()
+        point_type = point.get("type", "")
+        if not label:
+            continue
+        if point_type == "door":
+            named_steps.append(label)
+        elif not named_steps or named_steps[-1] != label:
+            named_steps.append(label)
+
+    route = " -> ".join(named_steps) if named_steps else "the saved route"
+    waypoint_count = len(path)
+    return (
+        f"Follow the saved navigation path: {route}. "
+        f"I found this from the edited floor graph using {waypoint_count} route points, "
+        "including doors and bend points."
+    )
 
 class IntentOutput(BaseModel):
     intent: Literal["NAVIGATION", "EMERGENCY", "BOOKING", "OTHER"] = Field(
@@ -372,11 +401,68 @@ def response_generation_node(state: AgentState) -> dict:
         )
     elif intent == "NAVIGATION":
         print(f"[NODE 4: RESPONSE GENERATION] Handling NAVIGATION")
+        nav_hints = None
+        try:
+            nav_llm = llm.with_structured_output(NavigationExtraction)
+            nav_extraction = nav_llm.invoke(
+                [SystemMessage(content=(
+                    "Extract the source and destination locations for the user's navigation request. "
+                    "Fix obvious typos only when the intended hospital location is clear. "
+                    "Examples: 'female word' means 'female ward'; 'women toilet' or "
+                    "'women's toilet' means 'women restroom'. Return None for whichever is not specified."
+                ))] + list(state["messages"])
+            )
+            if nav_extraction.source or nav_extraction.destination:
+                nav_hints = {
+                    "source": nav_extraction.source,
+                    "destination": nav_extraction.destination
+                }
+                print(f"[NODE 4: RESPONSE GENERATION] Extracted navigation hints: {nav_hints}")
+        except Exception as e:
+            print(f"[NODE 4: RESPONSE GENERATION] Failed to extract navigation hints: {e}")
+
+        if nav_hints and nav_hints.get("source") and nav_hints.get("destination"):
+            graph_path = navigation_service.get_navigation_path(
+                source_name=nav_hints["source"],
+                dest_name=nav_hints["destination"],
+                floor=1,
+            )
+            if graph_path:
+                content = _navigation_path_text(graph_path)
+                print("[NODE 4: RESPONSE GENERATION] Returning graph-based navigation answer.")
+                print("-"*50)
+                return {
+                    "messages": [AIMessage(content=content)],
+                    "navigation_hints": {
+                        "source": nav_hints["source"],
+                        "destination": nav_hints["destination"],
+                        "floor": graph_path.get("floor", 1),
+                    }
+                }
+            print("[NODE 4: RESPONSE GENERATION] Saved graph could not resolve path.")
+            print("-"*50)
+            return {
+                "messages": [AIMessage(content=(
+                    f"I could not find a saved graph path from {nav_hints['source']} "
+                    f"to {nav_hints['destination']}. Please check that both locations exist "
+                    "and are connected with edges in the admin map."
+                ))],
+                "navigation_hints": nav_hints
+            }
+
+        if nav_hints and (not nav_hints.get("source") or not nav_hints.get("destination")):
+            missing = "source" if not nav_hints.get("source") else "destination"
+            return {
+                "messages": [AIMessage(content=f"Please tell me the {missing} location so I can calculate the saved route.")],
+                "navigation_hints": nav_hints
+            }
+
         if not context or not context.strip():
             print(f"[NODE 4: RESPONSE GENERATION] No context -> returning 'no floor plan' message")
             print("-"*50)
             return {
                 "messages": [AIMessage(content="I'm sorry, but I don't have any floor plan information loaded right now. Please ask the admin to upload a floor plan so I can help you with directions.")],
+                "navigation_hints": nav_hints
             }
         system_msg = (
             "You are a helpful hospital navigation assistant.\n"
@@ -387,6 +473,13 @@ def response_generation_node(state: AgentState) -> dict:
             f"Context:\n{context}"
         )
         print(f"[NODE 4: RESPONSE GENERATION] System prompt with context built.")
+        
+        print(f"[NODE 4: RESPONSE GENERATION] Calling LLM for final response...")
+        messages = [SystemMessage(content=system_msg)] + list(state["messages"])
+        response = llm.invoke(messages)
+        print(f"[NODE 4: RESPONSE GENERATION] LLM Response: {response.content[:200]}...")
+        print("-"*50)
+        return {"messages": [response], "navigation_hints": nav_hints}
 
     # ── BOOKING intent: code-driven flow ────────────────────────────
     elif intent == "BOOKING":
