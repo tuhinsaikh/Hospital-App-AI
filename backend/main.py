@@ -119,33 +119,6 @@ def _save_floor_plan_draft(draft: dict) -> dict:
     return draft
 
 
-def _graph_to_vector_text(floor: int, graph_data: dict, extracted_text: str | None = None) -> str:
-    lines = [f"Hospital floor {floor} navigation graph."]
-    if extracted_text:
-        lines.append("Vision extraction summary:")
-        lines.append(extracted_text)
-    lines.append("Edited locations and walkable connections:")
-    nodes_by_id = {node.get("id"): node for node in graph_data.get("nodes", [])}
-    for node in graph_data.get("nodes", []):
-        label = node.get("label") or node.get("id", "")
-        node_type = node.get("type", "room")
-        door = node.get("door")
-        door_text = ""
-        if isinstance(door, dict) and "x" in door and "y" in door:
-            door_text = f", door at ({door['x']}, {door['y']})"
-        lines.append(f"- {label} [{node.get('id')}] type={node_type} at ({node.get('x')}, {node.get('y')}){door_text}")
-    for edge in graph_data.get("edges", []):
-        from_node = nodes_by_id.get(edge.get("from"), {})
-        to_node = nodes_by_id.get(edge.get("to"), {})
-        route_points = edge.get("path") or edge.get("waypoints") or []
-        route_text = ""
-        if route_points:
-            route_text = " via " + " -> ".join(f"({p.get('x')}, {p.get('y')})" for p in route_points)
-        lines.append(
-            f"- Path: {from_node.get('label') or edge.get('from')} to "
-            f"{to_node.get('label') or edge.get('to')}{route_text}"
-        )
-    return "\n".join(lines)
 
 
 def _graph_debug_snapshot(floor: int, graph_data: dict) -> dict:
@@ -210,8 +183,13 @@ async def admin_save_graph(request: SaveGraphRequest):
 
         if request.update_vectors and request.graph_data.get("nodes"):
             extracted_text = (draft or {}).get("extracted_text")
-            doc_text = _graph_to_vector_text(request.floor, request.graph_data, extracted_text)
-            rag_service.insert_document(doc_text, f"floor_{request.floor}_graph")
+            # TASK 2: Use AI Embedding Pipeline to generate a rich, natural language summary
+            # and insert it into the FAISS vector database.
+            rag_service.generate_and_insert_graph_embedding(
+                floor=request.floor, 
+                graph_data=request.graph_data, 
+                extracted_text=extracted_text
+            )
 
         if draft:
             draft["status"] = "committed"
@@ -291,6 +269,8 @@ async def update_floor_plan(
                 extracted_text = vision_service.extract_floor_plan_from_image(file_bytes, file.content_type)
                 
                 yield json.dumps({"step": 4, "status": "processing", "message": "Holding extracted text for final save..."}) + "\n"
+                # TASK 1: Notice that we DO NOT save to PostgreSQL or the Vector DB here.
+                # The data is kept strictly in a temporary JSON draft for admin review.
                 doc_id = location_id or f"floor_{floor_number}_{uuid.uuid4().hex[:8]}"
                 
                 yield json.dumps({"step": 5, "status": "processing", "message": "Extracting navigation graph from image (Pass 2)..."}) + "\n"

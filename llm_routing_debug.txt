@@ -938,3 +938,8 @@ Msg: I am at the second floor of the hospital, standing in front of men's toilet
 Intent: NAVIGATION
 Query: female restroom second floor hospital
 ---
+--- LLM ROUTING ---
+Msg: How can I reach from men's toilet to women's word?
+Intent: NAVIGATION
+Query: men's toilet to women's ward
+---
