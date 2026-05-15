@@ -943,3 +943,8 @@ Msg: How can I reach from men's toilet to women's word?
 Intent: NAVIGATION
 Query: men's toilet to women's ward
 ---
+--- LLM ROUTING ---
+Msg: I am at the waiting area of second floor, now I want to go x-ray room, how to go?
+Intent: NAVIGATION
+Query: x-ray room second floor from waiting area
+---
