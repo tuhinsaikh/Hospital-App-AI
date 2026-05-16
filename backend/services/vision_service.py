@@ -86,49 +86,102 @@ class VisionService:
         base64_image = base64.b64encode(file_bytes).decode('utf-8')
 
         prompt_text = (
-            "You are analyzing a hospital floor plan image.\n\n"
-            f"IMAGE DIMENSIONS: {image_width} pixels wide × {image_height} pixels tall.\n\n"
-            "TASK: Identify EVERY distinct location visible in this floor plan — this includes "
-            "but is not limited to: rooms, departments, offices, corridors, junctions, "
-            "staircases, elevators, entrances, exits, waiting areas, nurse stations, "
-            "restrooms, or ANY other labeled or identifiable area.\n\n"
-            "Every hospital is different. Do NOT assume which rooms exist — extract "
-            "ONLY what you can actually see in this specific image.\n\n"
-            "For each location:\n"
-            "1. Assign a unique snake_case ID based on its name\n"
-            "2. Provide its human-readable label exactly as shown in the image\n"
-            "3. Estimate its CENTER position as pixel coordinates where:\n"
-            f"   - (0, 0) = top-left corner of the image\n"
-            f"   - ({image_width}, {image_height}) = bottom-right corner\n"
-            "   Scale positions proportionally to the actual image dimensions.\n"
-            "4. Assign a type that best describes it (e.g., 'room', 'corridor', "
-            "'junction', 'staircase', 'elevator', 'entrance', 'restroom', "
-            "'nurse_station', 'waiting_area', or any other appropriate type)\n"
-            "5. When a room or department has a visible door/opening, include an optional "
-            '"door": {"x": pixel_x, "y": pixel_y} coordinate at that doorway. '
-            "Use the door point for walkable routing, not the room center.\n\n"
-            "Then identify which locations are directly connected (share a door, "
-            "hallway, or walkable path between them).\n\n"
-            "IMPORTANT: \n"
-            "- Also add corridor junction nodes where hallways intersect — these are critical for accurate pathfinding.\n"
-            "- CRITICAL: The graph MUST be fully connected. Ensure EVERY room is connected to a corridor or junction. Do NOT leave any nodes isolated without edges.\n"
-            "- Use the exact node IDs in the 'from' and 'to' fields of the edges.\n\n"
-            "For each edge, include a 'path' array when the walking route is not a straight "
-            "door-to-door segment. The path array is ordered bend points along corridors and "
-            "should use 90-degree/L-shaped turns where the corridor does. Example: "
-            '{"from": "room_a", "to": "junction_1", "path": [{"x": 220, "y": 310}, {"x": 360, "y": 310}]}.\n\n'
-            "Output ONLY valid JSON (no markdown, no code fences, no explanation) with this exact schema:\n"
+            "You are a spatial extraction engine for indoor hospital navigation.\n\n"
+            "You are NOT describing the image.\n"
+            "You are generating PRECISE navigation geometry.\n\n"
+            "IMAGE SIZE:\n"
+            f"- Width: {image_width}px\n"
+            f"- Height: {image_height}px\n\n"
+            "COORDINATE SYSTEM:\n"
+            "- Origin (0,0) is TOP LEFT\n"
+            "- X increases LEFT → RIGHT\n"
+            "- Y increases TOP → BOTTOM\n\n"
+            "GRID SYSTEM:\n"
+            "- Divide the image into a virtual square grid.\n"
+            "- Each grid cell is 50px × 50px.\n"
+            "- Use this grid to reason about exact geometry and alignment.\n\n"
+            "TASK:\n\n"
+            "Analyze the hospital floor plan and generate a NAVIGATION GRAPH.\n\n"
+            "You must identify:\n\n"
+            "1. WALKABLE NODES\n"
+            "2. CORRIDOR CENTERLINES\n"
+            "3. ROOM DOORWAY CONNECTIONS\n"
+            "4. JUNCTION TURN POINTS\n"
+            "5. POLYLINE ROUTES\n\n"
+            "CRITICAL GEOMETRY RULES:\n\n"
+            "1. ALL coordinates must lie on walkable areas only.\n\n"
+            "2. Room nodes:\n"
+            "   - Place the node at the ROOM DOORWAY, NOT room center.\n"
+            "   - Door nodes must align exactly with corridor edges.\n\n"
+            "3. Corridor nodes:\n"
+            "   - Place corridor nodes at corridor CENTERLINES.\n"
+            "   - Use the middle of the hallway width.\n\n"
+            "4. Junction nodes:\n"
+            "   - Create nodes wherever hallways:\n"
+            "     - intersect\n"
+            "     - turn\n"
+            "     - split\n"
+            "     - connect to stairs/lifts\n\n"
+            "5. Coordinate snapping:\n"
+            "   - Snap coordinates to nearest 5px increment.\n"
+            "   - Example:\n"
+            "     GOOD: (250, 405)\n"
+            "     BAD: (247, 403)\n\n"
+            "6. Polyline generation:\n"
+            "   - Every edge must contain a walkable polyline.\n"
+            "   - Polylines must follow corridor shapes exactly.\n"
+            "   - Use ONLY orthogonal movement:\n"
+            "     - horizontal\n"
+            "     - vertical\n"
+            "   - Avoid diagonal segments unless clearly visible.\n\n"
+            "7. Corridor following:\n"
+            "   - Never draw paths through walls.\n"
+            "   - Never cut across rooms.\n"
+            "   - Never use straight-line shortcuts.\n\n"
+            "8. Graph connectivity:\n"
+            "   - EVERY room must connect to corridor network.\n"
+            "   - No isolated nodes.\n\n"
+            "9. Path bend points:\n"
+            "   - Add bend points wherever hallway changes direction.\n\n"
+            "10. Spatial precision:\n"
+            "   - Maintain visual alignment with the image layout.\n"
+            "   - Coordinate placement accuracy is more important than semantic labeling.\n\n"
+            "NODE TYPES:\n"
+            "- room_entry\n"
+            "- corridor_junction\n"
+            "- stair_entry\n"
+            "- lift_entry\n"
+            "- entrance\n"
+            "- exit\n"
+            "- unknown\n\n"
+            "OUTPUT FORMAT:\n\n"
             "{\n"
             '  "nodes": [\n'
-            '    {"id": "main_entrance", "label": "Main Entrance", "x": 150, "y": 400, "type": "entrance", "door": {"x": 150, "y": 430}},\n'
-            '    {"id": "corridor_1", "label": "Main Corridor", "x": 300, "y": 400, "type": "corridor"},\n'
-            "    ...\n"
-            "  ],\n"
+            '    {\n'
+            '      "id": "female_ward_entry",\n'
+            '      "label": "Female Ward",\n'
+            '      "type": "room_entry",\n'
+            '      "x": 450,\n'
+            '      "y": 300\n'
+            '    }\n'
+            '  ],\n\n'
             '  "edges": [\n'
-            '    {"from": "main_entrance", "to": "corridor_1", "path": [{"x": 150, "y": 430}, {"x": 300, "y": 430}]},\n'
-            "    ...\n"
-            "  ]\n"
-            "}"
+            '    {\n'
+            '      "from": "corridor_junction_1",\n'
+            '      "to": "female_ward_entry",\n'
+            '      "polyline": [\n'
+            '        {"x": 300, "y": 300},\n'
+            '        {"x": 450, "y": 300}\n'
+            '      ]\n'
+            '    }\n'
+            '  ]\n'
+            "}\n\n"
+            "STRICT RULES:\n"
+            "- Output ONLY JSON\n"
+            "- No markdown\n"
+            "- No explanations\n"
+            "- No comments\n"
+            "- No extra text"
         )
 
         message = HumanMessage(
@@ -206,12 +259,12 @@ class VisionService:
             node["y"] = max(0, min(int(node["y"]), img_height))
             # Ensure type exists
             if "type" not in node:
-                node["type"] = "room"
-            if isinstance(node.get("door"), dict) and "x" in node["door"] and "y" in node["door"]:
-                node["door"]["x"] = max(0, min(int(node["door"]["x"]), img_width))
-                node["door"]["y"] = max(0, min(int(node["door"]["y"]), img_height))
-            elif "door" in node:
+                node["type"] = "room_entry"
+            
+            # Remove door property if it exists, since doors are now their own nodes
+            if "door" in node:
                 node.pop("door", None)
+                
             node_ids.add(node["id"])
             valid_nodes.append(node)
 
@@ -219,9 +272,9 @@ class VisionService:
         valid_edges = []
         for edge in graph["edges"]:
             if edge.get("from") in node_ids and edge.get("to") in node_ids:
-                route_points = edge.get("path")
-                if route_points is None:
-                    route_points = edge.get("waypoints")
+                # Support new 'polyline' schema or fallback to 'path'/'waypoints' for backwards compat during migration
+                route_points = edge.get("polyline") or edge.get("path") or edge.get("waypoints")
+                
                 if isinstance(route_points, list):
                     cleaned_points = []
                     for point in route_points:
@@ -231,7 +284,10 @@ class VisionService:
                                 "y": max(0, min(int(point["y"]), img_height)),
                             })
                     if cleaned_points:
-                        edge["path"] = cleaned_points
+                        edge["polyline"] = cleaned_points
+                    
+                    # Clean up old fields
+                    edge.pop("path", None)
                     edge.pop("waypoints", None)
                 valid_edges.append(edge)
             else:

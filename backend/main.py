@@ -127,22 +127,20 @@ def _graph_debug_snapshot(floor: int, graph_data: dict) -> dict:
     for idx, edge in enumerate(graph_data.get("edges", []), 1):
         from_node = nodes_by_id.get(edge.get("from"), {})
         to_node = nodes_by_id.get(edge.get("to"), {})
-        from_door = from_node.get("door")
-        to_door = to_node.get("door")
+        
         route = []
         route.append({"kind": "node", "id": edge.get("from"), "x": from_node.get("x"), "y": from_node.get("y")})
-        if from_door:
-            route.append({"kind": "door", "id": f"{edge.get('from')}:door", **from_door})
-        for point in edge.get("path") or edge.get("waypoints") or []:
+        
+        polyline = edge.get("polyline") or edge.get("path") or edge.get("waypoints") or []
+        for point in polyline:
             route.append({"kind": "bend", "x": point.get("x"), "y": point.get("y")})
-        if to_door:
-            route.append({"kind": "door", "id": f"{edge.get('to')}:door", **to_door})
+            
         route.append({"kind": "node", "id": edge.get("to"), "x": to_node.get("x"), "y": to_node.get("y")})
         edges.append({
             "index": idx,
             "from": edge.get("from"),
             "to": edge.get("to"),
-            "path": edge.get("path") or [],
+            "polyline": polyline,
             "expanded_route": route,
         })
     return {
@@ -152,7 +150,7 @@ def _graph_debug_snapshot(floor: int, graph_data: dict) -> dict:
         "counts": {
             "nodes": len(graph_data.get("nodes", [])),
             "edges": len(graph_data.get("edges", [])),
-            "doors": len([node for node in graph_data.get("nodes", []) if node.get("door")]),
+            "doors": len([node for node in graph_data.get("nodes", []) if node.get("type") == "door" or node.get("type") == "room_entry"]),
         },
     }
 

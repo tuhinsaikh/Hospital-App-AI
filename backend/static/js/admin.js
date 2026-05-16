@@ -16,14 +16,12 @@ let draftSaveTimer = null;
 // Canvas state
 let canvas, ctx;
 let scale = 1, offsetX = 0, offsetY = 0;
-let mode = 'select'; // select, add-node, add-door, add-edge, delete
+let mode = 'select'; // select, add-node, add-edge, delete
 let selectedNodeId = null;
 let selectedEdgeIdx = -1; // index into graphData.edges
 let edgeStartNodeId = null;
 let edgeWaypoints = []; // bend points being drawn for current edge
-let doorTargetNodeId = null;
 let draggingNode = null;
-let draggingDoor = null;
 let draggingWaypoint = null; // { edgeIdx, wpIdx }
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
@@ -346,15 +344,6 @@ function render() {
     ctx.lineWidth = 1.5 / scale;
     ctx.stroke();
 
-    if (node.door && Number.isFinite(Number(node.door.x)) && Number.isFinite(Number(node.door.y))) {
-      const doorSize = DOOR_SIZE / scale;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(node.door.x - doorSize / 2, node.door.y - doorSize / 2, doorSize, doorSize);
-      ctx.strokeStyle = isSelected ? '#e879f9' : getNodeColor(node.type);
-      ctx.lineWidth = (isSelected ? 2 : 1.5) / scale;
-      ctx.strokeRect(node.door.x - doorSize / 2, node.door.y - doorSize / 2, doorSize, doorSize);
-    }
-
     // Label
     if (node.label && node.type !== 'junction') {
       ctx.font = `${Math.max(10, 11 / scale)}px Inter, sans-serif`;
@@ -388,12 +377,10 @@ function getNodeColor(type) {
   return colors[type] || colors.room;
 }
 
-function canNodeHaveDoor(node) {
-  return node && !['corridor', 'junction'].includes(node.type || 'room');
-}
+
 
 function canNodeConnect(edgeNode) {
-  return !canNodeHaveDoor(edgeNode) || !!edgeNode.door;
+  return true;
 }
 
 // ── Canvas Events ──────────────────────────────────
@@ -438,15 +425,15 @@ function nodeAnchor(node) {
 }
 
 function edgeRoute(edge) {
-  if (Array.isArray(edge.path)) return edge.path;
-  if (Array.isArray(edge.waypoints)) return edge.waypoints;
+  if (Array.isArray(edge.polyline)) return edge.polyline;
+  if (Array.isArray(edge.polyline)) return edge.polyline;
   return [];
 }
 
 function setEdgeRoute(edge, route) {
-  if (route.length) edge.path = route;
-  else delete edge.path;
-  delete edge.waypoints;
+  if (route.length) edge.polyline = route;
+  else delete edge.polyline;
+  delete edge.polyline;
 }
 
 function getOrthogonalRoute(fromNode, toNode) {
@@ -534,11 +521,7 @@ function onMouseDown(e) {
       draggingWaypoint = wpHit;
       selectedNodeId = null;
       document.getElementById('nodeProperties').classList.remove('visible');
-    } else if (doorNode) {
-      selectedEdgeIdx = -1;
-      selectNode(doorNode.id);
-      draggingDoor = doorNode;
-    } else if (node) {
+     else if (node) {
       selectedEdgeIdx = -1;
       selectNode(node.id);
       draggingNode = node;
@@ -559,29 +542,6 @@ function onMouseDown(e) {
     document.getElementById('newNodeLabel').value = '';
     document.getElementById('addNodeModal').classList.add('visible');
     document.getElementById('newNodeLabel').focus();
-  } else if (mode === 'add-door') {
-    const node = hitTestNode(gp.x, gp.y);
-    if (!doorTargetNodeId) {
-      if (!node) {
-        showToast('Click a room/location node first', 'info');
-      } else if (!canNodeHaveDoor(node)) {
-        showToast('Corridors and junctions do not need doors', 'error');
-      } else {
-        doorTargetNodeId = node.id;
-        selectNode(node.id);
-        showToast('Now click the doorway/entry point', 'info');
-      }
-    } else {
-      const target = graphData.nodes.find(n => n.id === doorTargetNodeId);
-      if (target) {
-        target.door = { x: Math.round(gp.x), y: Math.round(gp.y) };
-        updatePropertyValues();
-        scheduleDraftSave();
-        showToast(`Door placed for ${target.label || target.id}`, 'success');
-      }
-      doorTargetNodeId = null;
-      setMode('select');
-    }
   } else if (mode === 'add-edge') {
     const node = hitTestNode(gp.x, gp.y);
     if (!edgeStartNodeId) {
@@ -610,11 +570,11 @@ function onMouseDown(e) {
       if (!exists) {
         const newEdge = { from: edgeStartNodeId, to: node.id };
         if (edgeWaypoints.length > 0) {
-          newEdge.path = edgeWaypoints.map(wp => ({ x: Math.round(wp.x), y: Math.round(wp.y) }));
+          newEdge.polyline = edgeWaypoints.map(wp => ({ x: Math.round(wp.x), y: Math.round(wp.y) }));
         } else {
           const fromNode = graphData.nodes.find(n => n.id === edgeStartNodeId);
           const route = getOrthogonalRoute(fromNode, node);
-          if (route.length) newEdge.path = route;
+          if (route.length) newEdge.polyline = route;
         }
         graphData.edges.push(newEdge);
         updateGraphInfo();
@@ -626,14 +586,7 @@ function onMouseDown(e) {
       edgeWaypoints.push({ x: Math.round(gp.x), y: Math.round(gp.y) });
     }
   } else if (mode === 'delete') {
-    const doorNode = hitTestDoor(gp.x, gp.y);
-    if (doorNode) {
-      delete doorNode.door;
-      if (selectedNodeId === doorNode.id) updatePropertyValues();
-      scheduleDraftSave();
-      render();
-      return;
-    }
+    
     const node = hitTestNode(gp.x, gp.y);
     if (node) {
       graphData.nodes = graphData.nodes.filter(n => n.id !== node.id);
@@ -690,8 +643,7 @@ function onMouseMove(e) {
 
   if (draggingDoor) {
     const gp = screenToGraph(sx, sy);
-    draggingDoor.door = { x: Math.round(gp.x), y: Math.round(gp.y) };
-    updatePropertyValues();
+        updatePropertyValues();
     render();
     return;
   }
@@ -720,8 +672,7 @@ function onMouseUp() {
   }
   if (draggingNode || draggingDoor || draggingWaypoint) scheduleDraftSave();
   draggingNode = null;
-  draggingDoor = null;
-  draggingWaypoint = null;
+    draggingWaypoint = null;
 }
 
 function onWheel(e) {
@@ -760,10 +711,7 @@ function updatePropertyValues() {
   document.getElementById('propLabel').value = node.label || '';
   document.getElementById('propType').value = node.type || 'room';
   document.getElementById('propX').value = node.x;
-  document.getElementById('propY').value = node.y;
-  document.getElementById('propDoorX').value = node.door ? node.door.x : '';
-  document.getElementById('propDoorY').value = node.door ? node.door.y : '';
-}
+  document.getElementById('propY').value = node.y;}
 
 function setupPropertyListeners() {
   document.getElementById('propLabel').addEventListener('input', e => {
@@ -781,38 +729,8 @@ function setupPropertyListeners() {
   document.getElementById('propY').addEventListener('change', e => {
     const node = graphData.nodes.find(n => n.id === selectedNodeId);
     if (node) { node.y = parseInt(e.target.value) || 0; render(); scheduleDraftSave(); }
-  });
-  document.getElementById('propDoorX').addEventListener('change', updateSelectedDoor);
-  document.getElementById('propDoorY').addEventListener('change', updateSelectedDoor);
-}
+  });}
 
-function updateSelectedDoor() {
-  const node = graphData.nodes.find(n => n.id === selectedNodeId);
-  if (!node) return;
-  const doorX = document.getElementById('propDoorX').value;
-  const doorY = document.getElementById('propDoorY').value;
-  if (doorX === '' || doorY === '') {
-    delete node.door;
-  } else {
-    node.door = { x: parseInt(doorX) || 0, y: parseInt(doorY) || 0 };
-  }
-  render();
-  scheduleDraftSave();
-}
-
-function startDoorForSelectedNode() {
-  const node = graphData.nodes.find(n => n.id === selectedNodeId);
-  if (!node) {
-    showToast('Select a room/location node first', 'info');
-    return;
-  }
-  if (!canNodeHaveDoor(node)) {
-    showToast('Corridors and junctions do not need doors', 'error');
-    return;
-  }
-  setMode('add-door');
-  doorTargetNodeId = node.id;
-  showToast('Click the doorway/entry point on the map', 'info');
 }
 
 function deleteSelectedNode() {
@@ -829,8 +747,7 @@ function setMode(newMode) {
   mode = newMode;
   edgeStartNodeId = null;
   edgeWaypoints = [];
-  doorTargetNodeId = null;
-  selectedEdgeIdx = -1;
+    selectedEdgeIdx = -1;
   document.querySelectorAll('.tool-btn[data-mode]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === newMode);
   });
@@ -840,8 +757,7 @@ function setMode(newMode) {
   const hints = {
     'select': 'Click & drag nodes or waypoints. Click edges to select.',
     'add-node': 'Click on the image to place a node',
-    'add-door': 'Click a room/location node, then click its doorway/entry point.',
-    'add-edge': 'Click start node, optional bends, then end node. No bends creates a 90-degree route.',
+        'add-edge': 'Click start node, optional bends, then end node. No bends creates a 90-degree route.',
     'delete': 'Click a node, door, edge, or waypoint to delete it'
   };
   document.getElementById('toolbarHint').textContent = hints[newMode] || '';
@@ -882,7 +798,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     cancelAddNode();
     if (mode === 'add-edge') { edgeStartNodeId = null; edgeWaypoints = []; }
-    if (mode === 'add-door') { doorTargetNodeId = null; }
+    if (mode === 'add-door') {  }
     selectedEdgeIdx = -1;
     render();
   }
@@ -941,21 +857,12 @@ function normalizeGraphForSave() {
   return {
     nodes: graphData.nodes.map(node => {
       const cleanNode = { ...node };
-      if (cleanNode.door) {
-        const doorX = Number(cleanNode.door.x);
-        const doorY = Number(cleanNode.door.y);
-        if (Number.isFinite(doorX) && Number.isFinite(doorY)) {
-          cleanNode.door = { x: Math.round(doorX), y: Math.round(doorY) };
-        } else {
-          delete cleanNode.door;
-        }
-      }
       return cleanNode;
     }),
     edges: graphData.edges.map(edge => {
       const cleanEdge = { from: edge.from, to: edge.to };
       const route = edgeRoute(edge).map(wp => ({ x: Math.round(wp.x), y: Math.round(wp.y) }));
-      if (route.length) cleanEdge.path = route;
+      if (route.length) cleanEdge.polyline = route;
       return cleanEdge;
     })
   };
@@ -1015,7 +922,7 @@ async function saveGraph() {
           index: edge.index,
           from: edge.from,
           to: edge.to,
-          bends: edge.path.length,
+          bends: edge.polyline.length,
           expanded_route: edge.expanded_route.map(p => `${p.kind}:${p.id || ''}(${p.x},${p.y})`).join(' -> ')
         })));
         console.log('Full graph log:', data.graph_log);

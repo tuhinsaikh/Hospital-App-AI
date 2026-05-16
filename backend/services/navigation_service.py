@@ -19,14 +19,6 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 
-def node_anchor(node: dict) -> dict:
-    """Use a room door as the walkable anchor when present."""
-    door = node.get("door")
-    if isinstance(door, dict) and "x" in door and "y" in door:
-        return {"x": door["x"], "y": door["y"]}
-    return {"x": node["x"], "y": node["y"]}
-
-
 def node_center(node: dict) -> dict:
     return {"x": node["x"], "y": node["y"]}
 
@@ -36,21 +28,33 @@ def same_point(a: dict, b: dict) -> bool:
 
 
 def edge_route_points(edge: dict, nodes: dict, reverse: bool = False) -> list[dict]:
-    """Return the route geometry for an edge, including door anchors and bends."""
+    """Return the route geometry for an edge. Uses polyline if available."""
     from_node = nodes[edge["from"]]
     to_node = nodes[edge["to"]]
-    middle = edge.get("path")
-    if middle is None:
-        middle = edge.get("waypoints", [])
+    
+    # Prefer the new 'polyline' field, fallback to 'path'/'waypoints'
+    polyline = edge.get("polyline") or edge.get("path") or edge.get("waypoints")
+    
+    if polyline and len(polyline) > 0:
+        points = polyline.copy()
+        
+        # Ensure the polyline starts/ends at the node centers if it doesn't already
+        # Some LLMs might not include the exact node coordinates in the polyline array.
+        if not same_point(points[0], node_center(from_node)):
+            points.insert(0, node_center(from_node))
+        if not same_point(points[-1], node_center(to_node)):
+            points.append(node_center(to_node))
+    else:
+        # Fallback to straight line
+        points = [node_center(from_node), node_center(to_node)]
+        # If no explicit bends exist, prefer an L-shaped indoor route over a diagonal.
+        if points[0]["x"] != points[1]["x"] and points[0]["y"] != points[1]["y"]:
+            start, end = points
+            points = [start, {"x": end["x"], "y": start["y"]}, end]
 
-    points = [node_anchor(from_node), *middle, node_anchor(to_node)]
     if reverse:
         points = list(reversed(points))
 
-    # If no explicit bends exist, prefer an L-shaped indoor route over a diagonal.
-    if len(points) == 2 and points[0]["x"] != points[1]["x"] and points[0]["y"] != points[1]["y"]:
-        start, end = points
-        points = [start, {"x": end["x"], "y": start["y"]}, end]
     return points
 
 
@@ -365,8 +369,7 @@ class NavigationService:
             current = prev[current]
         path_ids.reverse()
 
-        # Convert to drawable route:
-        # node center -> node door -> edge bends -> next door -> next node center.
+        # Convert to drawable route
         waypoints = []
         for i, nid in enumerate(path_ids):
             node = nodes[nid]
@@ -377,37 +380,17 @@ class NavigationService:
                     "x": center["x"],
                     "y": center["y"],
                     "label": node["label"],
-                    "type": node.get("type", "room"),
-                    "door": node.get("door"),
+                    "type": node.get("type", "room_entry"),
                 })
 
             if i < len(path_ids) - 1:
                 next_id = path_ids[i + 1]
-                next_node = nodes[next_id]
                 edge_info = edge_lookup.get((nid, next_id))
                 if edge_info:
-                    anchor = node_anchor(node)
-                    if not same_point(center, anchor):
-                        waypoints.append(route_waypoint(
-                            anchor,
-                            f"door_{nid}",
-                            f"{node['label']} entry" if node.get("label") else "",
-                            "door",
-                        ))
-
                     points = edge_route_points(edge_info["edge"], nodes, reverse=edge_info["reverse"])
+                    # Add intermediate polyline points
                     for wp in points[1:-1]:
                         waypoints.append(route_waypoint(wp, f"wp_{nid}_{next_id}"))
-
-                    next_anchor = node_anchor(next_node)
-                    next_center = node_center(next_node)
-                    if not same_point(next_anchor, next_center):
-                        waypoints.append(route_waypoint(
-                            next_anchor,
-                            f"door_{next_id}",
-                            f"{next_node['label']} entry" if next_node.get("label") else "",
-                            "door",
-                        ))
 
         print(f"[NAV_SERVICE] Path found: {' -> '.join(wp['label'] for wp in waypoints if wp['label'])}")
         return waypoints

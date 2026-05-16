@@ -90,16 +90,13 @@
         <div class="prop-group">
             <label for="propType">Type</label>
             <select id="propType">
-                <option value="room">Room</option>
-                <option value="corridor">Corridor</option>
-                <option value="junction">Junction</option>
+                <option value="room_entry">Room Entry</option>
+                <option value="corridor_junction">Corridor Junction</option>
+                <option value="stair_entry">Stair Entry</option>
+                <option value="lift_entry">Lift Entry</option>
                 <option value="entrance">Entrance</option>
-                <option value="staircase">Staircase</option>
-                <option value="elevator">Elevator</option>
-                <option value="restroom">Restroom</option>
-                <option value="nurse_station">Nurse Station</option>
-                <option value="waiting_area">Waiting Area</option>
-                <option value="other">Other</option>
+                <option value="exit">Exit</option>
+                <option value="unknown">Unknown</option>
             </select>
         </div>
 
@@ -111,17 +108,7 @@
             </div>
         </div>
 
-        <div class="prop-group">
-            <label>Door / Route Anchor</label>
-            <div class="prop-coords">
-                <input type="number" id="propDoorX" placeholder="Door X">
-                <input type="number" id="propDoorY" placeholder="Door Y">
-            </div>
-        </div>
 
-        <button class="reset-btn" id="placeDoorBtn" onclick="startDoorForSelectedNode()">
-            Place Door
-        </button>
 
         <button class="delete-node-btn" id="deleteNodeBtn" onclick="deleteSelectedNode()">
             🗑 Delete Node
@@ -140,9 +127,7 @@
             <button class="tool-btn" data-mode="add-node" onclick="setMode('add-node')">
                 <span class="tool-icon">⊕</span> Add Node
             </button>
-            <button class="tool-btn" data-mode="add-door" onclick="setMode('add-door')">
-                <span class="tool-icon">▣</span> Add Door
-            </button>
+
             <button class="tool-btn" data-mode="add-edge" onclick="setMode('add-edge')">
                 <span class="tool-icon">🔗</span> Add Edge
             </button>
@@ -267,16 +252,13 @@
         <div class="prop-group">
             <label for="newNodeType">Type</label>
             <select id="newNodeType">
-                <option value="room">Room</option>
-                <option value="corridor">Corridor</option>
-                <option value="junction">Junction</option>
+                <option value="room_entry">Room Entry</option>
+                <option value="corridor_junction">Corridor Junction</option>
+                <option value="stair_entry">Stair Entry</option>
+                <option value="lift_entry">Lift Entry</option>
                 <option value="entrance">Entrance</option>
-                <option value="staircase">Staircase</option>
-                <option value="elevator">Elevator</option>
-                <option value="restroom">Restroom</option>
-                <option value="nurse_station">Nurse Station</option>
-                <option value="waiting_area">Waiting Area</option>
-                <option value="other">Other</option>
+                <option value="exit">Exit</option>
+                <option value="unknown">Unknown</option>
             </select>
         </div>
         <div class="modal-actions">
