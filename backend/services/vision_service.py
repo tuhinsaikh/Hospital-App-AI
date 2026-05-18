@@ -5,6 +5,7 @@ import base64
 from langchain_core.messages import HumanMessage
 from langchain_ollama import ChatOllama
 from langchain_google_genai import ChatGoogleGenerativeAI
+from backend.services.cv_service import cv_service
 
 class VisionService:
     def __init__(self):
@@ -161,6 +162,152 @@ class VisionService:
         except Exception as e:
             print(f"[VISION_SERVICE] Graph extraction ERROR: {e}")
             raise Exception(f"Failed to extract navigation graph: {str(e)}")
+
+    def extract_hybrid_navigation_graph(
+        self, file_bytes: bytes, mime_type: str,
+        image_width: int, image_height: int
+    ) -> dict:
+        """
+        Uses OpenCV for deterministic geometry and VLM only for labels.
+        """
+        print(f"\n[VISION_SERVICE] Extracting HYBRID navigation graph (image: {image_width}x{image_height})...")
+        
+        # Phase 1: CV Geometry
+        regions = cv_service.extract_room_geometry(file_bytes, image_width, image_height)
+        
+        # Phase 2: VLM Labels
+        llm = self._get_vision_llm(temperature=0)
+        base64_image = base64.b64encode(file_bytes).decode('utf-8')
+        
+        prompt_text = (
+            "You are analyzing a hospital floor plan image.\n"
+            "TASK: List EVERY distinct room name or label visible in this image.\n"
+            "For each label, describe its approximate position using ONLY these grid sections:\n"
+            "'top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'.\n\n"
+            "Output ONLY valid JSON representing an array of objects:\n"
+            "[\n"
+            "  {\"label\": \"MEN\", \"position\": \"bottom-left\"},\n"
+            "  {\"label\": \"FEMALE WARD\", \"position\": \"middle-right\"}\n"
+            "]"
+        )
+        
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": prompt_text},
+                {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}},
+            ]
+        )
+        
+        try:
+            print("[VISION_SERVICE] Sending image to VLM for labels...")
+            response = llm.invoke([message])
+            raw_text = response.content
+            print(f"[VISION_SERVICE] VLM labels response: {raw_text[:200]}...")
+            
+            # Parse labels array
+            labels_data = []
+            try:
+                # Same JSON parsing logic but for array
+                text = raw_text.strip()
+                code_block_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
+                if code_block_match:
+                    text = code_block_match.group(1).strip()
+                else:
+                    bracket_match = re.search(r'\[.*\]', text, re.DOTALL)
+                    if bracket_match:
+                        text = bracket_match.group(0)
+                labels_data = json.loads(text)
+            except Exception as e:
+                print(f"[VISION_SERVICE] Could not parse labels JSON: {e}")
+                labels_data = []
+                
+            # Phase 3: Proximity Matching
+            nodes = []
+            used_regions = set()
+            
+            # Group regions by position
+            regions_by_pos = {}
+            for r in regions:
+                pos = r["grid_position"]
+                if pos not in regions_by_pos:
+                    regions_by_pos[pos] = []
+                regions_by_pos[pos].append(r)
+                
+            # Match labels to regions
+            for label_obj in labels_data:
+                label_text = label_obj.get("label", "Unknown")
+                pos = label_obj.get("position", "center")
+                
+                # Sanitize ID
+                node_id = re.sub(r'[^a-z0-9]', '_', label_text.lower().strip())
+                
+                # Find matching region
+                matched_region = None
+                if pos in regions_by_pos and regions_by_pos[pos]:
+                    # For simplicity, pick the first available region in that section
+                    # that hasn't been used, or just pop it
+                    for r in regions_by_pos[pos]:
+                        if r["id"] not in used_regions:
+                            matched_region = r
+                            used_regions.add(r["id"])
+                            break
+                            
+                if matched_region:
+                    nodes.append({
+                        "id": node_id,
+                        "label": label_text,
+                        "x": matched_region["x"],
+                        "y": matched_region["y"],
+                        "type": "room"
+                    })
+                else:
+                    # If no region found, just place it randomly or skip it
+                    # Let's place it at center
+                    nodes.append({
+                        "id": node_id,
+                        "label": label_text,
+                        "x": image_width // 2,
+                        "y": image_height // 2,
+                        "type": "room"
+                    })
+                    
+            # Add any unmatched regions as "Unknown" rooms
+            unmatched_count = 0
+            for r in regions:
+                if r["id"] not in used_regions:
+                    nodes.append({
+                        "id": f"unknown_{unmatched_count}",
+                        "label": "Unknown Area",
+                        "x": r["x"],
+                        "y": r["y"],
+                        "type": "room"
+                    })
+                    unmatched_count += 1
+                    
+            # Generate edges: Connect everything to a central corridor node for simplicity in V1
+            corridor_id = "main_corridor"
+            nodes.append({
+                "id": corridor_id,
+                "label": "Main Corridor",
+                "x": image_width // 2,
+                "y": image_height // 2,
+                "type": "corridor"
+            })
+            
+            edges = []
+            for n in nodes:
+                if n["id"] != corridor_id:
+                    edges.append({
+                        "from": n["id"],
+                        "to": corridor_id,
+                        "path": [{"x": n["x"], "y": n["y"]}, {"x": image_width // 2, "y": image_height // 2}]
+                    })
+                    
+            return self._validate_graph({"nodes": nodes, "edges": edges}, image_width, image_height)
+            
+        except Exception as e:
+            print(f"[VISION_SERVICE] Hybrid graph extraction ERROR: {e}")
+            raise Exception(f"Failed to extract hybrid navigation graph: {str(e)}")
 
     def _parse_graph_json(self, raw_text: str) -> dict:
         """Parse JSON from VLM response, handling markdown code fences."""

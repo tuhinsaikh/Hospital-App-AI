@@ -47,6 +47,14 @@
             </select>
         </div>
 
+        <div class="floor-input-group">
+            <label for="methodSelect">Method:</label>
+            <select id="methodSelect">
+                <option value="hybrid">Hybrid (CV + VLM)</option>
+                <option value="vlm">Legacy (VLM Only)</option>
+            </select>
+        </div>
+
         <button class="upload-btn" id="uploadBtn" disabled>
             🚀 Upload & Extract
         </button>
@@ -137,14 +145,17 @@
             <button class="tool-btn active" data-mode="select" onclick="setMode('select')">
                 <span class="tool-icon">🖱</span> Select
             </button>
-            <button class="tool-btn" data-mode="add-node" onclick="setMode('add-node')">
+            <button class="tool-btn" data-mode="add-room" onclick="setMode('add-room')">
                 <span class="tool-icon">⊕</span> Add Node
             </button>
             <button class="tool-btn" data-mode="add-door" onclick="setMode('add-door')">
                 <span class="tool-icon">▣</span> Add Door
             </button>
-            <button class="tool-btn" data-mode="add-edge" onclick="setMode('add-edge')">
+            <button class="tool-btn" data-mode="draw-path" onclick="setMode('draw-path')">
                 <span class="tool-icon">🔗</span> Add Edge
+            </button>
+            <button class="tool-btn" data-mode="edit-path" onclick="setMode('edit-path')">
+                <span class="tool-icon">E</span> Edit Path
             </button>
             <button class="tool-btn" data-mode="delete" onclick="setMode('delete')">
                 <span class="tool-icon">🗑</span> Delete
@@ -290,7 +301,7 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- App Script -->
-<script src="/static/js/admin.js"></script>
+<script src="/static/js/admin_v2.js"></script>
 
 </body>
 </html>

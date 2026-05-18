@@ -16,3 +16,7 @@ langchain-google-genai
 Pillow
 faiss-cpu
 langchain-community
+opencv-python-headless
+numpy
+networkx
+

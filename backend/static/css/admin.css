@@ -556,6 +556,9 @@ body {
 .canvas-container.mode-add-node { cursor: crosshair; }
 .canvas-container.mode-add-door { cursor: crosshair; }
 .canvas-container.mode-add-edge { cursor: crosshair; }
+.canvas-container.mode-add-room { cursor: crosshair; }
+.canvas-container.mode-draw-path { cursor: crosshair; }
+.canvas-container.mode-edit-path { cursor: default; }
 .canvas-container.mode-delete { cursor: not-allowed; }
 .canvas-container.panning { cursor: grabbing; }
 

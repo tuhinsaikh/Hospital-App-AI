@@ -6,6 +6,7 @@
 // ── State ──────────────────────────────────────────
 let graphData = { nodes: [], edges: [] };
 let originalGraphData = null;
+let dualGraphData = null; // {schema_version:2, v1:{nodes,edges}, v2:{...}} when available
 let floorPlanImage = null;
 let floorImageUrl = '';
 let currentFloor = 1;
@@ -28,6 +29,11 @@ let draggingWaypoint = null; // { edgeIdx, wpIdx }
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
 let lastMouse = { x: 0, y: 0 };
+
+// Freehand edge drawing (Add Edge mode): click+drag to record a polyline
+let edgeDrawActive = false;
+let edgeDrawLastPoint = null;
+const EDGE_DRAW_MIN_DIST = 10; // px in graph space
 
 const NODE_RADIUS = 8;
 const HIT_RADIUS = 14;
@@ -55,6 +61,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load existing graph if available
   loadExistingFloor();
 });
+
+function ensureDualGraphShape(v1Graph) {
+  if (dualGraphData && dualGraphData.schema_version === 2) return dualGraphData;
+  return {
+    schema_version: 2,
+    v1: v1Graph || { nodes: [], edges: [] },
+    v2: {
+      rooms: [],
+      doors: [],
+      walkable_paths: [],
+      junctions: [],
+      graph: { nodes: [], edges: [] },
+      meta: { tolerances: {}, sources: {} }
+    }
+  };
+}
+
+function loadGraphIntoEditor(rawGraph) {
+  if (rawGraph && rawGraph.schema_version === 2 && rawGraph.v1) {
+    dualGraphData = rawGraph;
+    graphData = JSON.parse(JSON.stringify(rawGraph.v1));
+    originalGraphData = JSON.parse(JSON.stringify(rawGraph.v1));
+  } else {
+    dualGraphData = ensureDualGraphShape(rawGraph || { nodes: [], edges: [] });
+    graphData = JSON.parse(JSON.stringify(rawGraph || { nodes: [], edges: [] }));
+    originalGraphData = JSON.parse(JSON.stringify(rawGraph || { nodes: [], edges: [] }));
+  }
+}
 
 function resizeCanvas() {
   const container = document.getElementById('canvasContainer');
@@ -122,6 +156,7 @@ async function uploadAndProcess() {
   if (!file) return;
 
   const floor = document.getElementById('floorSelect').value;
+  const method = document.getElementById('methodSelect') ? document.getElementById('methodSelect').value : 'hybrid';
   const btn = document.getElementById('uploadBtn');
   btn.disabled = true;
 
@@ -133,6 +168,7 @@ async function uploadAndProcess() {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('floor_number', floor);
+  formData.append('extraction_method', method);
 
   try {
     const response = await fetch('/update_floor_plan', { method: 'POST', body: formData });
@@ -197,8 +233,7 @@ function handleProcessingStep(data) {
 
   // If final success, load the graph into the editor
   if (status === 'success' && data.navigation_graph) {
-    graphData = JSON.parse(JSON.stringify(data.navigation_graph));
-    originalGraphData = JSON.parse(JSON.stringify(data.navigation_graph));
+    loadGraphIntoEditor(data.navigation_graph);
     currentDraftId = data.draft_id || null;
     currentFloor = parseInt(document.getElementById('floorSelect').value);
     floorImageUrl = data.floor_plan_image || '';
@@ -222,8 +257,7 @@ async function loadExistingFloor() {
     if (!res.ok) return;
     const data = await res.json();
     if (data.graph_data) {
-      graphData = data.graph_data;
-      originalGraphData = JSON.parse(JSON.stringify(data.graph_data));
+      loadGraphIntoEditor(data.graph_data);
       currentDraftId = null;
       floorImageUrl = data.image_path || '';
       imgWidth = data.image_width || 0;
@@ -574,7 +608,16 @@ function onMouseDown(e) {
     } else {
       const target = graphData.nodes.find(n => n.id === doorTargetNodeId);
       if (target) {
-        target.door = { x: Math.round(gp.x), y: Math.round(gp.y) };
+        const newDoor = { x: Math.round(gp.x), y: Math.round(gp.y) };
+        if (Array.isArray(target.doors)) {
+          target.doors.push(newDoor);
+          if (!target.door) target.door = target.doors[0];
+        } else if (target.door && Number.isFinite(Number(target.door.x)) && Number.isFinite(Number(target.door.y))) {
+          target.doors = [target.door, newDoor];
+        } else {
+          target.door = newDoor;
+          target.doors = [newDoor];
+        }
         updatePropertyValues();
         scheduleDraftSave();
         showToast(`Door placed for ${target.label || target.id}`, 'success');
@@ -594,6 +637,8 @@ function onMouseDown(e) {
         }
         edgeStartNodeId = node.id;
         edgeWaypoints = [];
+        edgeDrawActive = false;
+        edgeDrawLastPoint = null;
         showToast('Click empty space for bends, click target node to finish', 'info');
       }
     } else if (node && node.id !== edgeStartNodeId) {
@@ -621,9 +666,14 @@ function onMouseDown(e) {
       }
       edgeStartNodeId = null;
       edgeWaypoints = [];
+      edgeDrawActive = false;
+      edgeDrawLastPoint = null;
     } else if (!node) {
-      // Clicked empty space — add bend/waypoint
-      edgeWaypoints.push({ x: Math.round(gp.x), y: Math.round(gp.y) });
+      // Clicked empty space — add bend/waypoint (dragging will keep sampling points)
+      const pt = { x: Math.round(gp.x), y: Math.round(gp.y) };
+      edgeWaypoints.push(pt);
+      edgeDrawActive = true;
+      edgeDrawLastPoint = pt;
     }
   } else if (mode === 'delete') {
     const doorNode = hitTestDoor(gp.x, gp.y);
@@ -688,6 +738,25 @@ function onMouseMove(e) {
     return;
   }
 
+  // Freehand edge drawing (Add Edge mode): while holding left mouse, sample points along drag.
+  if (mode === 'add-edge' && edgeStartNodeId && edgeDrawActive && (e.buttons & 1) === 1) {
+    const gp = screenToGraph(sx, sy);
+    const pt = { x: Math.round(gp.x), y: Math.round(gp.y) };
+    if (!edgeDrawLastPoint) {
+      edgeWaypoints.push(pt);
+      edgeDrawLastPoint = pt;
+      render();
+      return;
+    }
+    const dist = Math.hypot(pt.x - edgeDrawLastPoint.x, pt.y - edgeDrawLastPoint.y);
+    if (dist >= EDGE_DRAW_MIN_DIST) {
+      edgeWaypoints.push(pt);
+      edgeDrawLastPoint = pt;
+      render();
+      return;
+    }
+  }
+
   if (draggingDoor) {
     const gp = screenToGraph(sx, sy);
     draggingDoor.door = { x: Math.round(gp.x), y: Math.round(gp.y) };
@@ -717,6 +786,10 @@ function onMouseUp() {
   if (isPanning) {
     isPanning = false;
     document.getElementById('canvasContainer').classList.remove('panning');
+  }
+  if (edgeDrawActive) {
+    edgeDrawActive = false;
+    edgeDrawLastPoint = null;
   }
   if (draggingNode || draggingDoor || draggingWaypoint) scheduleDraftSave();
   draggingNode = null;
@@ -793,8 +866,13 @@ function updateSelectedDoor() {
   const doorY = document.getElementById('propDoorY').value;
   if (doorX === '' || doorY === '') {
     delete node.door;
+    if (Array.isArray(node.doors)) node.doors = node.doors.slice(1);
+    if (Array.isArray(node.doors) && node.doors.length === 0) delete node.doors;
   } else {
-    node.door = { x: parseInt(doorX) || 0, y: parseInt(doorY) || 0 };
+    const d = { x: parseInt(doorX) || 0, y: parseInt(doorY) || 0 };
+    node.door = d;
+    if (Array.isArray(node.doors) && node.doors.length) node.doors[0] = d;
+    else node.doors = [d];
   }
   render();
   scheduleDraftSave();
@@ -829,6 +907,8 @@ function setMode(newMode) {
   mode = newMode;
   edgeStartNodeId = null;
   edgeWaypoints = [];
+  edgeDrawActive = false;
+  edgeDrawLastPoint = null;
   doorTargetNodeId = null;
   selectedEdgeIdx = -1;
   document.querySelectorAll('.tool-btn[data-mode]').forEach(btn => {
@@ -841,7 +921,7 @@ function setMode(newMode) {
     'select': 'Click & drag nodes or waypoints. Click edges to select.',
     'add-node': 'Click on the image to place a node',
     'add-door': 'Click a room/location node, then click its doorway/entry point.',
-    'add-edge': 'Click start node, optional bends, then end node. No bends creates a 90-degree route.',
+    'add-edge': 'Click start node, then click or drag to draw the polyline, then click end node.',
     'delete': 'Click a node, door, edge, or waypoint to delete it'
   };
   document.getElementById('toolbarHint').textContent = hints[newMode] || '';
@@ -881,7 +961,7 @@ document.addEventListener('keydown', e => {
   }
   if (e.key === 'Escape') {
     cancelAddNode();
-    if (mode === 'add-edge') { edgeStartNodeId = null; edgeWaypoints = []; }
+    if (mode === 'add-edge') { edgeStartNodeId = null; edgeWaypoints = []; edgeDrawActive = false; edgeDrawLastPoint = null; }
     if (mode === 'add-door') { doorTargetNodeId = null; }
     selectedEdgeIdx = -1;
     render();
@@ -941,6 +1021,18 @@ function normalizeGraphForSave() {
   return {
     nodes: graphData.nodes.map(node => {
       const cleanNode = { ...node };
+      if (Array.isArray(cleanNode.doors)) {
+        const cleaned = cleanNode.doors
+          .map(d => ({ x: Number(d.x), y: Number(d.y) }))
+          .filter(d => Number.isFinite(d.x) && Number.isFinite(d.y))
+          .map(d => ({ x: Math.round(d.x), y: Math.round(d.y) }));
+        if (cleaned.length) {
+          cleanNode.doors = cleaned;
+          if (!cleanNode.door) cleanNode.door = cleaned[0];
+        } else {
+          delete cleanNode.doors;
+        }
+      }
       if (cleanNode.door) {
         const doorX = Number(cleanNode.door.x);
         const doorY = Number(cleanNode.door.y);
@@ -961,6 +1053,15 @@ function normalizeGraphForSave() {
   };
 }
 
+function buildDualGraphForSave(v1Graph) {
+  const base = ensureDualGraphShape(v1Graph);
+  if (dualGraphData && dualGraphData.schema_version === 2) {
+    base.v2 = dualGraphData.v2 || base.v2;
+  }
+  base.v1 = v1Graph;
+  return base;
+}
+
 function scheduleDraftSave() {
   if (!currentDraftId) return;
   clearTimeout(draftSaveTimer);
@@ -972,13 +1073,14 @@ async function saveDraftNow() {
   clearTimeout(draftSaveTimer);
   draftSaveTimer = null;
   try {
+    const v1Graph = normalizeGraphForSave();
     await fetch('/admin/save_draft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         draft_id: currentDraftId,
         floor: currentFloor,
-        graph_data: normalizeGraphForSave()
+        graph_data: buildDualGraphForSave(v1Graph)
       })
     });
   } catch (err) {
@@ -992,21 +1094,21 @@ async function saveGraph() {
   btn.textContent = 'Saving...';
 
   try {
-    const graphToSave = normalizeGraphForSave();
+    const v1Graph = normalizeGraphForSave();
     const res = await fetch('/admin/save_graph', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         floor: currentFloor,
-        graph_data: graphToSave,
+        graph_data: buildDualGraphForSave(v1Graph),
         update_vectors: true,
         draft_id: currentDraftId
       })
     });
     const data = await res.json();
     if (res.ok) {
-      graphData = graphToSave;
-      originalGraphData = JSON.parse(JSON.stringify(graphToSave));
+      graphData = v1Graph;
+      originalGraphData = JSON.parse(JSON.stringify(v1Graph));
       if (data.graph_log) {
         console.group('Saved navigation graph');
         console.log('Counts:', data.graph_log.counts);

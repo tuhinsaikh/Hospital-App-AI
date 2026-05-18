@@ -235,15 +235,7 @@ function renderPath(pathData) {
   // Path polyline coordinates (Leaflet uses [y, x] with flipped Y)
   const coords = pathData.path.map(wp => [h - wp.y, wp.x]);
 
-  // Shadow line (wider, darker)
-  L.polyline(coords, {
-    color: 'rgba(66,133,244,0.25)',
-    weight: 10,
-    lineCap: 'round',
-    lineJoin: 'round'
-  }).addTo(navLayerGroup);
-
-  // Main animated path
+  // Main path (single stroke to avoid "multiple path" confusion)
   L.polyline(coords, {
     color: '#4285F4',
     weight: 5,
@@ -341,10 +333,19 @@ function renderDirections(pathData) {
   const panel = document.getElementById('directionsContent');
   const summary = document.getElementById('walkSummary');
 
+  const fullPath = Array.isArray(pathData.path) ? pathData.path : [];
+  const lastIdx = Math.max(0, fullPath.length - 1);
+  // UX: hide internal corridor/junction hops in the step list; keep geometry unchanged for the polyline.
+  const steps = fullPath.filter((wp, i) => {
+    if (i === 0 || i === lastIdx) return true;
+    const t = (wp.type || '').toLowerCase();
+    return !['junction', 'corridor'].includes(t);
+  });
+
   // Calculate estimated walk time (~1.2m/s walking, pixels to approx meters)
-  const totalPixelDist = pathData.path.reduce((sum, wp, i) => {
+  const totalPixelDist = fullPath.reduce((sum, wp, i) => {
     if (i === 0) return 0;
-    const prev = pathData.path[i - 1];
+    const prev = fullPath[i - 1];
     return sum + Math.hypot(wp.x - prev.x, wp.y - prev.y);
   }, 0);
   // Rough: 1 pixel ≈ 0.05m (adjustable)
@@ -353,17 +354,17 @@ function renderDirections(pathData) {
 
   // Show summary
   summary.classList.add('visible');
-  document.getElementById('walkSteps').textContent = pathData.path.length;
+  document.getElementById('walkSteps').textContent = steps.length;
   document.getElementById('walkTime').textContent = `~${estMinutes} min`;
 
   // Build step list
   let html = '';
-  pathData.path.forEach((wp, i) => {
+  steps.forEach((wp, i) => {
     let dotClass = '';
     if (i === 0) dotClass = 'start';
-    else if (i === pathData.path.length - 1) dotClass = 'end';
+    else if (i === steps.length - 1) dotClass = 'end';
 
-    const showConnector = i < pathData.path.length - 1;
+    const showConnector = i < steps.length - 1;
 
     html += `
       <div class="direction-step">

@@ -31,6 +31,8 @@ from backend.agents.hospital_agent import hospital_agent_app
 from backend.services.rag_service import rag_service
 from backend.services.vision_service import vision_service
 from backend.services.navigation_service import navigation_service
+from backend.services.v2_graph_builder import ensure_dual_store, derive_v2_from_v1, derive_v1_from_v2, build_topology
+from backend.services.cv_service import cv_service
 
 # --- Models ---
 class ChatRequest(BaseModel):
@@ -159,9 +161,23 @@ def _graph_debug_snapshot(floor: int, graph_data: dict) -> dict:
 @app.post("/admin/save_graph")
 async def admin_save_graph(request: SaveGraphRequest):
     """Save an edited navigation graph to the database."""
+    incoming = request.graph_data or {}
+    dual = ensure_dual_store(incoming)
+    v1_view = dual["v1"]
+    # If v2 authoring data is missing, derive from v1 and build topology for routing.
+    if not (dual["v2"].get("rooms") or dual["v2"].get("doors") or dual["v2"].get("walkable_paths")):
+        dual["v2"] = derive_v2_from_v1(v1_view)
+    dual["v2"] = build_topology(dual["v2"])
+
+    # If v1 is empty but v2 exists (new editor), derive a minimal v1 view for logs/embeddings.
+    if not v1_view.get("nodes") and (dual["v2"].get("rooms") or dual["v2"].get("doors")):
+        v1_view = derive_v1_from_v2(dual["v2"])
+        dual["v1"] = v1_view
+
     print(f"\n[API /admin/save_graph] floor={request.floor}, "
-          f"nodes={len(request.graph_data.get('nodes', []))}, "
-          f"edges={len(request.graph_data.get('edges', []))}")
+          f"nodes={len(v1_view.get('nodes', []))}, "
+          f"edges={len(v1_view.get('edges', []))}, "
+          f"schema_version={dual.get('schema_version')}")
     try:
         draft = _load_floor_plan_draft(request.draft_id) if request.draft_id else None
         if request.draft_id and not draft:
@@ -175,28 +191,28 @@ async def admin_save_graph(request: SaveGraphRequest):
 
         navigation_service.save_graph(
             floor=request.floor,
-            graph_data=request.graph_data,
+            graph_data=dual,
             image_path=image_path,
             image_width=image_width,
             image_height=image_height,
         )
 
-        if request.update_vectors and request.graph_data.get("nodes"):
+        if request.update_vectors and v1_view.get("nodes"):
             extracted_text = (draft or {}).get("extracted_text")
             # TASK 2: Use AI Embedding Pipeline to generate a rich, natural language summary
             # and insert it into the FAISS vector database.
             rag_service.generate_and_insert_graph_embedding(
                 floor=request.floor, 
-                graph_data=request.graph_data, 
+                graph_data=v1_view,
                 extracted_text=extracted_text
             )
 
         if draft:
             draft["status"] = "committed"
-            draft["graph_data"] = request.graph_data
+            draft["graph_data"] = dual
             _save_floor_plan_draft(draft)
 
-        graph_log = _graph_debug_snapshot(request.floor, request.graph_data)
+        graph_log = _graph_debug_snapshot(request.floor, v1_view)
         print("[ADMIN GRAPH SAVE LOG]")
         print(json.dumps(graph_log, indent=2))
 
@@ -220,7 +236,7 @@ async def admin_save_draft(request: SaveDraftRequest):
     if not draft:
         raise HTTPException(status_code=404, detail="Draft not found")
     draft["floor"] = request.floor
-    draft["graph_data"] = request.graph_data
+    draft["graph_data"] = ensure_dual_store(request.graph_data or {})
     draft["status"] = "editing"
     _save_floor_plan_draft(draft)
     return {"status": "success", "message": "Draft updated"}
@@ -247,9 +263,11 @@ async def update_floor_plan(
     document: str = Form(None),
     location_id: str = Form(None),
     floor_number: int = Form(1),
+    extraction_method: str = Form("vlm"),
 ):
     print("\n" + "="*70)
     print("[API /update_floor_plan] >>> REQUEST RECEIVED (Streaming)")
+    print(f"[API /update_floor_plan] file={file.filename if file else None}, method={extraction_method}")
     print(f"[API /update_floor_plan] file={file.filename if file else None}, document_len={len(document) if document else 0}, location_id={location_id}, floor={floor_number}")
     print("="*70)
 
@@ -273,12 +291,17 @@ async def update_floor_plan(
                 # The data is kept strictly in a temporary JSON draft for admin review.
                 doc_id = location_id or f"floor_{floor_number}_{uuid.uuid4().hex[:8]}"
                 
-                yield json.dumps({"step": 5, "status": "processing", "message": "Extracting navigation graph from image (Pass 2)..."}) + "\n"
+                yield json.dumps({"step": 5, "status": "processing", "message": f"Extracting navigation graph ({extraction_method} method)..."}) + "\n"
                 nav_graph = None
                 try:
-                    nav_graph = vision_service.extract_navigation_graph_from_image(
-                        file_bytes, file.content_type, img_width, img_height
-                    )
+                    if extraction_method == "hybrid":
+                        nav_graph = vision_service.extract_hybrid_navigation_graph(
+                            file_bytes, file.content_type, img_width, img_height
+                        )
+                    else:
+                        nav_graph = vision_service.extract_navigation_graph_from_image(
+                            file_bytes, file.content_type, img_width, img_height
+                        )
                 except Exception as nav_err:
                     yield json.dumps({"step": 5, "status": "warning", "message": f"Graph extraction failed: {nav_err}"}) + "\n"
                     
@@ -290,13 +313,33 @@ async def update_floor_plan(
                 image_url = f"/static/maps/{image_filename}"
                 
                 yield json.dumps({"step": 7, "status": "processing", "message": "Saving editable draft..."}) + "\n"
+                # Build a v2-first draft. Even if VLM graph extraction fails, try to seed rooms from CV.
+                dual_graph = ensure_dual_store(nav_graph or {"nodes": [], "edges": []})
+                if not dual_graph["v1"].get("nodes") and file_bytes:
+                    try:
+                        regions = cv_service.extract_room_geometry(file_bytes, img_width, img_height)
+                        if regions:
+                            dual_graph["v2"]["rooms"] = [{
+                                "id": r["id"],
+                                "label": "Unknown",
+                                "type": "room",
+                                "x": int(r["x"]),
+                                "y": int(r["y"]),
+                                "door_ids": [],
+                                "meta": {"source": "cv"},
+                            } for r in regions]
+                    except Exception:
+                        pass
+                if not (dual_graph["v2"].get("rooms") or dual_graph["v2"].get("doors") or dual_graph["v2"].get("walkable_paths")):
+                    dual_graph["v2"] = derive_v2_from_v1(dual_graph["v1"])
+                dual_graph["v2"] = build_topology(dual_graph["v2"])
                 draft = _save_floor_plan_draft({
                     "draft_id": str(uuid.uuid4()),
                     "status": "editing",
                     "floor": floor_number,
                     "location_id": doc_id,
                     "extracted_text": extracted_text,
-                    "graph_data": nav_graph or {"nodes": [], "edges": []},
+                    "graph_data": dual_graph,
                     "image_path": image_url,
                     "image_width": img_width,
                     "image_height": img_height,
@@ -434,7 +477,21 @@ async def get_navigation_locations(floor: int = Query(1)):
     if not entry:
         raise HTTPException(status_code=404, detail=f"No navigation graph for floor {floor}")
     
-    nodes = entry["graph_data"].get("nodes", [])
+    graph_data = entry["graph_data"]
+    if isinstance(graph_data, dict) and graph_data.get("schema_version") == 2 and isinstance(graph_data.get("v2"), dict):
+        rooms = graph_data["v2"].get("rooms", []) or []
+        return {
+            "floor": floor,
+            "locations": [{
+                "id": r.get("id"),
+                "label": r.get("label") or r.get("id"),
+                "type": r.get("type", "room"),
+                "x": r.get("x", 0),
+                "y": r.get("y", 0),
+            } for r in rooms],
+        }
+
+    nodes = (graph_data or {}).get("nodes", [])
     return {
         "floor": floor,
         "locations": [{"id": n["id"], "label": n["label"], "type": n.get("type", "room"), "x": n.get("x", 0), "y": n.get("y", 0)} for n in nodes]
